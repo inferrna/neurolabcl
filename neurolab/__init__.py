@@ -16,7 +16,7 @@ to create and explore other neural network types.
 
 :Example:
 
-	>>> import numpy as np
+	>>> from neurolab import mynp  as np
 	>>> import neurolab as nl
 	>>> # Create train samples
 	>>> input = np.random.uniform(-0.5, 0.5, (10, 2))
@@ -51,6 +51,7 @@ __version__ = '0.3.5'
 __status__ = '3 - Alpha'
 import pyopencl as cl
 ctx = cl.create_some_context()
+import mynp
 
 from .tool import load
 from . import net

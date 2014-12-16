@@ -7,7 +7,7 @@ from .core import Layer
 from . import init
 from . import trans
 
-import numpy as np
+from neurolab import mynp  as np
 
 
 class Perceptron(Layer):
@@ -56,7 +56,7 @@ def euclidean(A, B):
     See scipi.spatial.distance.cdist()
 
     :Example:
-        >>> import numpy as np
+        >>> from neurolab import mynp  as np
         >>> euclidean(np.array([0,0]), np.array([[0,1], [0, 5.5]])).tolist()
         [1.0, 5.5]
 

@@ -3,7 +3,7 @@
 Define Core Classes
 
 """
-import numpy as np
+from neurolab import mynp  as np
 from . import tool
 from neurolab import ctx
 

@@ -3,7 +3,7 @@
 Some helpful tools
 
 """
-import numpy as np
+from neurolab import mynp  as np
 
 
 def minmax(input):

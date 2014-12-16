@@ -40,7 +40,7 @@ from . import layer
 from . import train
 from . import error
 from . import init
-import numpy as np
+from neurolab import mynp  as np
 from neurolab import ctx
 
 def newff(minmax, size, transf=None):

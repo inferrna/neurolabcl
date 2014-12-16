@@ -32,7 +32,7 @@ Delta rule
 """
 
 import functools
-import numpy as np
+from neurolab import mynp  as np
 from neurolab.core import Train
 import neurolab.tool as tool
 from neurolab import ctx

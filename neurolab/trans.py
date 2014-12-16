@@ -3,7 +3,7 @@
 Transfer function with derivatives
 
 :Example:
-    >>> import numpy as np
+    >>> from neurolab import mynp  as np
     >>> f = TanSig()
     >>> x = np.linspace(-5,5,100)
     >>> y = f(x)
@@ -14,7 +14,7 @@ Transfer function with derivatives
     [-2, 2]
 """
 
-import numpy as np
+from neurolab import mynp  as np
 
 
 class TanSig:
@@ -59,7 +59,7 @@ class PureLin:
         y : ndarray
             copy of x
     :Example:
-        >>> import numpy as np
+        >>> from neurolab import mynp  as np
         >>> f = PureLin()
         >>> x = np.array([-100., 50., 10., 40.])
         >>> f(x).tolist()
@@ -221,7 +221,7 @@ class SoftMax:
         y : ndarray
             range values [0, 1]
     :Example:
-        >>> from numpy import floor
+        >>> from mynp import floor
         >>> f = SoftMax()
         >>> floor(f([0, 1, 0.5, -0.5]) * 10)
         array([ 1.,  4.,  2.,  1.])

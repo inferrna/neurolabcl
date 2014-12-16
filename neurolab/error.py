@@ -12,7 +12,7 @@
 
 """
 
-import numpy as np
+from neurolab import mynp  as np
 
 
 class MSE():

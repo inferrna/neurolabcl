@@ -35,7 +35,7 @@ import functools
 from neurolab import mynp  as np
 from neurolab.core import Train
 import neurolab.tool as tool
-from neurolab import ctx
+
 
 ######<<<delta
 """

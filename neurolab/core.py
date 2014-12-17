@@ -5,7 +5,7 @@ Define Core Classes
 """
 from neurolab import mynp  as np
 from . import tool
-from neurolab import ctx
+
 
 class NeuroLabError(Exception):
     pass

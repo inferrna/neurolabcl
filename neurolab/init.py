@@ -6,7 +6,7 @@ Functions of initialization  layers
 
 
 from neurolab import mynp  as np
-from neurolab import ctx
+
 
 def init_rand(layer, min=-0.5, max=0.5, init_prop='w'):
     """

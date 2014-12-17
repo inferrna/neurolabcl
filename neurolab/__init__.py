@@ -49,9 +49,7 @@ __version__ = '0.3.5'
 # Development Status :: 1 - Planning, 2 - Pre-Alpha, 3 - Alpha,
 #                       4 - Beta, 5 - Production/Stable
 __status__ = '3 - Alpha'
-import pyopencl as cl
-ctx = cl.create_some_context()
-import mynp
+from . import mynp
 
 from .tool import load
 from . import net

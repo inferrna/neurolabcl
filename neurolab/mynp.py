@@ -1,126 +1,159 @@
 import numpy as np
+import pyopencl as cl
+from pyopencl import clrandom, array
+ctx = cl.create_some_context()
+queue = cl.CommandQueue(ctx)
+#random = np.random
+Inf = np.Inf
 
+#randomeer.uniform(queue, (10,2,), np.float32, a=-0.5, b=0.5)
+#np.random.uniform(-0.5, 0.5, (10, 2))
+
+class myrandom():
+    def __init__(self):
+        print("Init random")
+        #np.random.__init__(self)
+        self.randomeer = clrandom.RanluxGenerator(queue)
+    def random(self, size):
+        print("call random")
+        res = clrandom.rand(queue, size, np.float32, a=0.0, b=1.0)
+        return res
+    def uniform(self, low=0.0, high=1.0, size=1):
+        print("call uniform")
+        res = self.randomeer.uniform(queue, size, np.float32, a=low, b=high)
+        return res
+    def randint(self, low, high=1.0, size=1):
+        print("call randint")
+        res = clrandom.rand(queue, size, np.int32, a=low, b=high)
+        return res
+    def rand(self, *args):
+        print("args==",args)
+        res = clrandom.rand(queue, args, np.float32, a=0.0, b=1.0)
+        return res
+        
+
+random = myrandom()
 
 def argmin(*args, **kwargs):
-    return np.argmin(args, **kwargs)
+    return np.argmin(*args, **kwargs)
 
 
 def concatenate(*args, **kwargs):
-    return np.concatenate(args, **kwargs)
+    return np.concatenate(*args, **kwargs)
 
 
 def dot(*args, **kwargs):
-    return np.dot(args, **kwargs)
+    print("dot args==", args)
+    return np.dot(*args)#, **kwargs)
 
 
 def floor(*args, **kwargs):
-    return np.floor(args, **kwargs)
+    return np.floor(*args, **kwargs)
 
 
 def isneginf(*args, **kwargs):
-    return np.isneginf(args, **kwargs)
+    return np.isneginf(*args, **kwargs)
 
 
 def ones_like(*args, **kwargs):
-    return np.ones_like(args, **kwargs)
+    return np.ones_like(*args, **kwargs)
 
 
 def row_stack(*args, **kwargs):
-    return np.row_stack(args, **kwargs)
+    return np.row_stack(*args, **kwargs)
 
 
 def tanh(*args, **kwargs):
-    return np.tanh(args, **kwargs)
+    return np.tanh(*args, **kwargs)
 
 
 def all(*args, **kwargs):
-    return np.all(args, **kwargs)
+    return np.all(*args, **kwargs)
 
 
 def asfarry(*args, **kwargs):
-    return np.asfarry(args, **kwargs)
+    return np.asfarry(*args, **kwargs)
 
 
 def exp(*args, **kwargs):
-    return np.exp(args, **kwargs)
+    return np.exp(*args, **kwargs)
 
 
 def linspace(*args, **kwargs):
-    return np.linspace(args, **kwargs)
+    return np.linspace(*args, **kwargs)
 
 
 def min(*args, **kwargs):
-    return np.min(args, **kwargs)
+    return np.min(*args, **kwargs)
 
 
 def sqrt(*args, **kwargs):
-    return np.sqrt(args, **kwargs)
+    return np.sqrt(*args, **kwargs)
 
 
 def values(*args, **kwargs):
-    return np.values(args, **kwargs)
+    return np.values(*args, **kwargs)
 
 
 def isinf(*args, **kwargs):
-    return np.isinf(args, **kwargs)
+    return np.isinf(*args, **kwargs)
 
 
 def items(*args, **kwargs):
-    return np.items(args, **kwargs)
+    return np.items(*args, **kwargs)
 
 
 def max(*args, **kwargs):
-    return np.max(args, **kwargs)
+    return np.max(*args, **kwargs)
 
 
 def py(*args, **kwargs):
-    return np.py(args, **kwargs)
+    return np.py(*args, **kwargs)
 
 
 def abs(*args, **kwargs):
-    return np.abs(args, **kwargs)
+    arr = args[0]
+    if type(arr).__name__ == 'Array':
+        return arr.__abs__()
+    else:
+        return np.abs(*args, **kwargs)
 
 
 def empty(*args, **kwargs):
-    return np.empty(args, **kwargs)
+    return np.empty(*args, **kwargs)
 
-
-def random(*args, **kwargs):
-    return np.random(args, **kwargs)
 
 
 def argmax(*args, **kwargs):
-    return np.argmax(args, **kwargs)
+    return np.argmax(*args, **kwargs)
 
 
 def square(*args, **kwargs):
-    return np.square(args, **kwargs)
+    return np.square(*args, **kwargs)
 
 
 def sign(*args, **kwargs):
-    return np.sign(args, **kwargs)
+    return np.sign(*args, **kwargs)
 
 
 def zeros_like(*args, **kwargs):
-    return np.zeros_like(args, **kwargs)
+    return np.zeros_like(*args, **kwargs)
 
 
 def sum(*args, **kwargs):
-    return np.sum(args, **kwargs)
+    return np.sum(*args, **kwargs)
 
 
 def zeros(*args, **kwargs):
-    return np.zeros(args, **kwargs)
+    return np.zeros(*args, **kwargs)
 
 
-def Inf(*args, **kwargs):
-    return np.Inf(args, **kwargs)
 
 
 def asfarray(*args, **kwargs):
-    return np.asfarray(args, **kwargs)
+    return np.asfarray(*args, **kwargs)
 
 
 def array(*args, **kwargs):
-    return np.array(args, **kwargs)
+    return np.array(*args, **kwargs)
 

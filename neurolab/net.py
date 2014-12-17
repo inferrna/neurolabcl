@@ -41,7 +41,7 @@ from . import train
 from . import error
 from . import init
 from neurolab import mynp  as np
-from neurolab import ctx
+
 
 def newff(minmax, size, transf=None):
     """

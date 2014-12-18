@@ -75,16 +75,17 @@ def tanh(a, out=None):
     return clmath.tanh(a, queue=queue) #np.tanh(*args, **kwargs)
 
 
-def all(*args, **kwargs):
-    return np.all(*args, **kwargs)
+def all(a, axis=None, out=None, keepdims=False):
+    #TODO: work with axis, out, keepdims
+    return a.all(queue=queue) #np.all(*args, **kwargs)
 
 
-def asfarry(*args, **kwargs):
-    return np.asfarry(*args, **kwargs)
+def asfarray(a, dtype=np.float32):
+    return a.astype(dtype, queue=queue)
 
-
-def exp(*args, **kwargs):
-    return np.exp(*args, **kwargs)
+def exp(a, out=None):
+    #TODO: work with out
+    return clmath.exp(a, queue=queue) #np.tanh(*args, **kwargs)
 
 
 def linspace(*args, **kwargs):

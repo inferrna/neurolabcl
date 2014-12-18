@@ -89,15 +89,17 @@ def exp(a, out=None):
 
 
 def linspace(*args, **kwargs):
-    return np.linspace(*args, **kwargs)
+    #TODO: create native function
+    return arr_from_np( np.linspace(*args, **kwargs) )
 
 
-def min(*args, **kwargs):
-    return np.min(*args, **kwargs)
+def min(a):
+    return a.min()#np.min(*args, **kwargs)
 
 
-def sqrt(*args, **kwargs):
-    return np.sqrt(*args, **kwargs)
+def sqrt(a, out=None):
+    #TODO: work with out
+    return clmath.sqrt(a, queue=queue) #np.tanh(*args, **kwargs)
 
 
 def values(*args, **kwargs):

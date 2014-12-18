@@ -1,6 +1,6 @@
 import numpy as np
 import pyopencl as cl
-from pyopencl import clrandom, array
+from pyopencl import clrandom, array, clmath
 ctx = cl.create_some_context()
 queue = cl.CommandQueue(ctx)
 #random = np.random
@@ -31,6 +31,9 @@ class myrandom():
         res = clrandom.rand(queue, args, np.float32, a=0.0, b=1.0)
         return res
         
+def arr_from_np(nparr):
+    buf = cl.Buffer(ctx, mf.READ_WRITE| mf.COPY_HOST_PTR, hostbuf=nparr)
+    return array.Array(queue, nparr.shape, nparr.dtype, data=buf)
 
 random = myrandom()
 
@@ -38,33 +41,38 @@ def argmin(*args, **kwargs):
     return np.argmin(*args, **kwargs)
 
 
-def concatenate(*args, **kwargs):
-    return np.concatenate(*args, **kwargs)
+def concatenate(arrays, axis=0):
+    return array.concatenate(arrays, axis, queue)#np.concatenate(*args, **kwargs)
 
 
-def dot(*args, **kwargs):
-    print("dot args==", args)
-    return np.dot(*args)#, **kwargs)
+def dot(a, b, out=None):
+    print("dot args==", [type(a) for a in args])
+    #TODO: work with out
+    return array.dot(a, b)#np.dot(*args, **kwargs)
 
 
-def floor(*args, **kwargs):
-    return np.floor(*args, **kwargs)
+def floor(a, out=None):
+    #TODO: work with out
+    return clmath.floor(a, queue=queue) #np.floor(*args, **kwargs)
 
 
 def isneginf(*args, **kwargs):
     return np.isneginf(*args, **kwargs)
 
 
-def ones_like(*args, **kwargs):
-    return np.ones_like(*args, **kwargs)
+def ones_like(a, dtype=None, order='K', subok=True):
+    res = empty(a.shape, dtype=a.dtype)
+    res.fill(1, queue=queue)
+    return res
 
 
 def row_stack(*args, **kwargs):
     return np.row_stack(*args, **kwargs)
 
 
-def tanh(*args, **kwargs):
-    return np.tanh(*args, **kwargs)
+def tanh(a, out=None):
+    #TODO: work with out
+    return clmath.tanh(a, queue=queue) #np.tanh(*args, **kwargs)
 
 
 def all(*args, **kwargs):
@@ -119,8 +127,9 @@ def abs(*args, **kwargs):
         return np.abs(*args, **kwargs)
 
 
-def empty(*args, **kwargs):
-    return np.empty(*args, **kwargs)
+def empty(shape, dtype=np.float32):
+    #return arr_from_np( np.empty(*args, **kwargs) )
+    return array.Array(queue, shape, dtype)
 
 
 
@@ -136,8 +145,8 @@ def sign(*args, **kwargs):
     return np.sign(*args, **kwargs)
 
 
-def zeros_like(*args, **kwargs):
-    return np.zeros_like(*args, **kwargs)
+def zeros_like(a, dtype=None, order='K', subok=True):
+    return array.zeros_like(a)
 
 
 def sum(*args, **kwargs):
@@ -145,15 +154,12 @@ def sum(*args, **kwargs):
 
 
 def zeros(*args, **kwargs):
-    return np.zeros(*args, **kwargs)
-
-
-
+    return arr_from_np( np.zeros(*args, **kwargs) )
 
 def asfarray(*args, **kwargs):
     return np.asfarray(*args, **kwargs)
 
 
 def array(*args, **kwargs):
-    return np.array(*args, **kwargs)
+    return arr_from_np( np.array(*args, **kwargs) )
 

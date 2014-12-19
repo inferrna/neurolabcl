@@ -1,10 +1,23 @@
 import numpy as np
 import pyopencl as cl
-from pyopencl import clrandom, array, clmath
+from pyopencl import clrandom, clmath
+from pyopencl import array as clarray
 ctx = cl.create_some_context()
 queue = cl.CommandQueue(ctx)
 #random = np.random
 Inf = np.Inf
+mf = cl.mem_flags
+
+signsrc = """
+__kernel void asign(__global float *inpt, __global float *outpt){
+    uint gid = get_global_id(0);
+    float res = copysign(1, inpt[gid]);
+    outpt[gid] = res; 
+}
+
+"""
+
+run = cl.Program(ctx, signsrc).build()
 
 #randomeer.uniform(queue, (10,2,), np.float32, a=-0.5, b=0.5)
 #np.random.uniform(-0.5, 0.5, (10, 2))
@@ -33,7 +46,7 @@ class myrandom():
         
 def arr_from_np(nparr):
     buf = cl.Buffer(ctx, mf.READ_WRITE| mf.COPY_HOST_PTR, hostbuf=nparr)
-    return array.Array(queue, nparr.shape, nparr.dtype, data=buf)
+    return clarray.Array(queue, nparr.shape, nparr.dtype, data=buf)
 
 random = myrandom()
 
@@ -42,13 +55,13 @@ def argmin(*args, **kwargs):
 
 
 def concatenate(arrays, axis=0):
-    return array.concatenate(arrays, axis, queue)#np.concatenate(*args, **kwargs)
+    return clarray.concatenate(arrays, axis, queue)#np.concatenate(*args, **kwargs)
 
 
 def dot(a, b, out=None):
     print("dot args==", [type(a) for a in args])
     #TODO: work with out
-    return array.dot(a, b)#np.dot(*args, **kwargs)
+    return clarray.dot(a, b)#np.dot(*args, **kwargs)
 
 
 def floor(a, out=None):
@@ -85,7 +98,7 @@ def asfarray(a, dtype=np.float32):
 
 def exp(a, out=None):
     #TODO: work with out
-    return clmath.exp(a, queue=queue) #np.tanh(*args, **kwargs)
+    return clmath.exp(a, queue=queue) #np.exp(*args, **kwargs)
 
 
 def linspace(*args, **kwargs):
@@ -99,7 +112,7 @@ def min(a):
 
 def sqrt(a, out=None):
     #TODO: work with out
-    return clmath.sqrt(a, queue=queue) #np.tanh(*args, **kwargs)
+    return clmath.sqrt(a, queue=queue) #np.sqrt(*args, **kwargs)
 
 
 def values(*args, **kwargs):
@@ -113,14 +126,8 @@ def isinf(*args, **kwargs):
 def items(*args, **kwargs):
     return np.items(*args, **kwargs)
 
-
-def max(*args, **kwargs):
-    return np.max(*args, **kwargs)
-
-
-def py(*args, **kwargs):
-    return np.py(*args, **kwargs)
-
+def max(a):
+    return a.max()#np.max(*args, **kwargs)
 
 def abs(*args, **kwargs):
     arr = args[0]
@@ -129,40 +136,43 @@ def abs(*args, **kwargs):
     else:
         return np.abs(*args, **kwargs)
 
-
 def empty(shape, dtype=np.float32):
     #return arr_from_np( np.empty(*args, **kwargs) )
-    return array.Array(queue, shape, dtype)
-
+    return clarray.Array(queue, shape, dtype)
 
 
 def argmax(*args, **kwargs):
     return np.argmax(*args, **kwargs)
 
 
-def square(*args, **kwargs):
-    return np.square(*args, **kwargs)
+def square(a, out=None):
+    #TODO: work with out
+    return a*a #np.square(*args, **kwargs)
 
 
-def sign(*args, **kwargs):
-    return np.sign(*args, **kwargs)
+def sign(a, out=None):
+    if out:
+        run.asign(queue, (a.size,), None, a.data, out.data)
+        return out
+    else:
+        res = clarray.empty_like(a)
+        run.asign(queue, (a.size,), None, a.data, res.data)
+        return res
 
 
 def zeros_like(a, dtype=None, order='K', subok=True):
-    return array.zeros_like(a)
+    return clarray.zeros_like(a)
 
 
-def sum(*args, **kwargs):
-    return np.sum(*args, **kwargs)
+def sum(a, axis=None, dtype=None, out=None):
+    #TODO: work with axis, out, keepdims
+    return clarray.sum(a, queue=queue) #np.sum(*args, **kwargs)
 
 
 def zeros(*args, **kwargs):
     return arr_from_np( np.zeros(*args, **kwargs) )
 
-def asfarray(*args, **kwargs):
-    return np.asfarray(*args, **kwargs)
-
-
 def array(*args, **kwargs):
+    if not 'dtype' in kwargs.keys():
+        kwargs['dtype'] = np.float32
     return arr_from_np( np.array(*args, **kwargs) )
-

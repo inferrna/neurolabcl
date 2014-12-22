@@ -17,6 +17,12 @@ __kernel void asign(__global float *inpt, __global float *outpt){
 
 """
 
+class myclArray(clarray.Array):
+    def __init__(self, *args, **kwargs):
+        clarray.Array.__init__(self, *args, **kwargs)
+        self.ndim = len(self.shape)
+
+
 run = cl.Program(ctx, signsrc).build()
 
 #randomeer.uniform(queue, (10,2,), np.float32, a=-0.5, b=0.5)
@@ -46,7 +52,7 @@ class myrandom():
         
 def arr_from_np(nparr):
     buf = cl.Buffer(ctx, mf.READ_WRITE| mf.COPY_HOST_PTR, hostbuf=nparr)
-    return clarray.Array(queue, nparr.shape, nparr.dtype, data=buf)
+    return myclArray(queue, nparr.shape, nparr.dtype, data=buf)
 
 random = myrandom()
 
@@ -73,8 +79,8 @@ def isneginf(*args, **kwargs):
     return np.isneginf(*args, **kwargs)
 
 
-def ones_like(a, dtype=None, order='K', subok=True):
-    res = empty(a.shape, dtype=a.dtype)
+def ones_like(a, dtype=np.float32, order='K', subok=True):
+    res = empty(a.shape, dtype=(dtype or a.dtype))
     res.fill(1, queue=queue)
     return res
 
@@ -94,7 +100,11 @@ def all(a, axis=None, out=None, keepdims=False):
 
 
 def asfarray(a, dtype=np.float32):
-    return a.astype(dtype, queue=queue)
+    if type(a).__name__ == 'Array':
+        return a.astype(dtype, queue=queue)
+    else:
+        return array(a, dtype=dtype)
+
 
 def exp(a, out=None):
     #TODO: work with out
@@ -138,7 +148,7 @@ def abs(*args, **kwargs):
 
 def empty(shape, dtype=np.float32):
     #return arr_from_np( np.empty(*args, **kwargs) )
-    return clarray.Array(queue, shape, dtype)
+    return myclArray(queue, shape, dtype)
 
 
 def argmax(*args, **kwargs):
@@ -170,6 +180,8 @@ def sum(a, axis=None, dtype=None, out=None):
 
 
 def zeros(*args, **kwargs):
+    if not 'dtype' in kwargs.keys():
+        kwargs['dtype'] = np.float32
     return arr_from_np( np.zeros(*args, **kwargs) )
 
 def array(*args, **kwargs):

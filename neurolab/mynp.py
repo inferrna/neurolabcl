@@ -13,8 +13,21 @@ __kernel void asign(__global float *inpt, __global float *outpt){
     uint gid = get_global_id(0);
     float res = copysign(1, inpt[gid]);
     outpt[gid] = res; 
-}
-
+}\n
+"""
+isinfsrc = """
+__kernel void isposinf(__global float *inpt, __global uint *outpt){
+    uint gid = get_global_id(0);
+    float val = inpt[gid];
+    float res = isinf(val);
+    outpt[gid] = res;
+}\n
+__kernel void isneginf(__global float *inpt, __global uint *outpt){
+    uint gid = get_global_id(0);
+    float val = inpt[gid];
+    float res =  signbit(val) * isinf(val);
+    outpt[gid] = res;
+}\n
 """
 
 class myclArray(clarray.Array):
@@ -23,7 +36,7 @@ class myclArray(clarray.Array):
         self.ndim = len(self.shape)
 
 
-run = cl.Program(ctx, signsrc).build()
+run = cl.Program(ctx, signsrc+isinfsrc).build()
 
 #randomeer.uniform(queue, (10,2,), np.float32, a=-0.5, b=0.5)
 #np.random.uniform(-0.5, 0.5, (10, 2))
@@ -75,8 +88,16 @@ def floor(a, out=None):
     return clmath.floor(a, queue=queue) #np.floor(*args, **kwargs)
 
 
-def isneginf(*args, **kwargs):
-    return np.isneginf(*args, **kwargs)
+def isneginf(a, out=None):
+    if out:
+        run.isneginf(queue, (a.size,), None, a.data, out.data)
+        return out
+    else:
+        res = clarray.empty(queue, a.shape, dtype=np.uint32)
+        #res = clarray.empty_like(a)
+        run.isneginf(queue, (a.size,), None, a.data, res.data)
+        return res
+    #return np.isneginf(*args, **kwargs)
 
 
 def ones_like(a, dtype=np.float32, order='K', subok=True):
@@ -129,8 +150,15 @@ def values(*args, **kwargs):
     return np.values(*args, **kwargs)
 
 
-def isinf(*args, **kwargs):
-    return np.isinf(*args, **kwargs)
+def isinf(a, out=None):
+    if out:
+        run.isposinf(queue, (a.size,), None, a.data, out.data)
+        return out
+    else:
+        res = clarray.empty(queue, a.shape, dtype=np.uint32)
+        run.isposinf(queue, (a.size,), None, a.data, res.data)
+        return res
+    #return np.isinf(*args, **kwargs)
 
 
 def items(*args, **kwargs):

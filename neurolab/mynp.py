@@ -2,6 +2,7 @@ import numpy as np
 import pyopencl as cl
 from pyopencl import clrandom, clmath
 from pyopencl import array as clarray
+from pyopencl import algorithm
 ctx = cl.create_some_context()
 queue = cl.CommandQueue(ctx)
 #random = np.random
@@ -34,7 +35,40 @@ class myclArray(clarray.Array):
     def __init__(self, *args, **kwargs):
         clarray.Array.__init__(self, *args, **kwargs)
         self.ndim = len(self.shape)
+#TODO rewrite inner operators to support boolean array as parameter
+#https://docs.python.org/3/library/operator.html
+        self.is_boolean = False
 
+    def __lt__(self, other):
+        result = clarray.Array.__lt__(self, other)
+        result.is_boolean = True
+        return result
+    def __le__(self, other):
+        result = clarray.Array.__le__(self, other)
+        result.is_boolean = True
+        return result
+    def __eq__(self, other):
+        result = clarray.Array.__eq__(self, other)
+        result.is_boolean = True
+        return result
+    def __ne__(self, other):
+        result = clarray.Array.__ne__(self, other)
+        result.is_boolean = True
+        return result
+    def __ge__(self, other):
+        result = clarray.Array.__ge__(self, other)
+        result.is_boolean = True
+        return result
+    def __gt__(self, other):
+        result = clarray.Array.__gt__(self, other)
+        result.is_boolean = True
+        return result
+    def __getitem__(self, index):
+        if isinstance(index, myclArray) and index.is_boolean == True:
+            x, y, z = algorithm.copy_if(self, "index[i]!=0", [("index", index)])
+            return x[:y.get()]
+        else:
+            return clarray.Array.__getitem__(self, index)
 
 run = cl.Program(ctx, signsrc+isinfsrc).build()
 
@@ -153,10 +187,12 @@ def values(*args, **kwargs):
 def isinf(a, out=None):
     if out:
         run.isposinf(queue, (a.size,), None, a.data, out.data)
+        out.is_boolean = True
         return out
     else:
         res = clarray.empty(queue, a.shape, dtype=np.uint32)
         run.isposinf(queue, (a.size,), None, a.data, res.data)
+        res.is_boolean = True
         return res
     #return np.isinf(*args, **kwargs)
 

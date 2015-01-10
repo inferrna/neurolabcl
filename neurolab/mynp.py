@@ -66,9 +66,11 @@ class myclArray(clarray.Array):
     def __getitem__(self, index):
         if isinstance(index, myclArray) and index.is_boolean == True:
             x, y, z = algorithm.copy_if(self, "index[i]!=0", [("index", index)])
-            return x[:y.get()]
+            _res = x[:y.get()]
+            res = myclArray(queue, _res.shape, _res.dtype, data=_res.data)
         else:
-            return clarray.Array.__getitem__(self, index)
+            res = clarray.Array.__getitem__(self, index)
+        return res
 
 run = cl.Program(ctx, signsrc+isinfsrc).build()
 

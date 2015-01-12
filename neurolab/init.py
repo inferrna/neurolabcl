@@ -126,6 +126,12 @@ def initnw(layer):
 
     # Scaleble to inp_minmax
     minmax = layer.inp_minmax.copy()
+    print(type(minmax))
+    print(type(np.isneginf(minmax)))
+    print(minmax)
+    print(minmax.shape)
+    print(np.isneginf(minmax))
+    print(minmax[np.isneginf(minmax)])
     minmax[np.isneginf(minmax)] = -1
     minmax[np.isinf(minmax)] = 1
 

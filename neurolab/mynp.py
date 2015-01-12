@@ -65,10 +65,12 @@ class myclArray(clarray.Array):
         return result
     def __getitem__(self, index):
         if isinstance(index, myclArray) and index.is_boolean == True:
-            x, y, z = algorithm.copy_if(self, "index[i]!=0", [("index", index)])
-            _res = x[:y.get()]
+            print("index is myclArray")
+            x, y, z = algorithm.copy_if(self, "index[i]!=0", [("index", index.reshape((index.size,)))])
+            _res = x.reshape((x.size,))[:y.get()]
             res = myclArray(queue, _res.shape, _res.dtype, data=_res.data)
         else:
+            print("index is not myclArray, but", type(index))
             res = clarray.Array.__getitem__(self, index)
         return res
 
@@ -127,11 +129,13 @@ def floor(a, out=None):
 def isneginf(a, out=None):
     if out:
         run.isneginf(queue, (a.size,), None, a.data, out.data)
+        out.is_boolean = True
         return out
     else:
-        res = clarray.empty(queue, a.shape, dtype=np.uint32)
+        res = empty(a.shape, dtype=np.uint32)
         #res = clarray.empty_like(a)
         run.isneginf(queue, (a.size,), None, a.data, res.data)
+        res.is_boolean = True
         return res
     #return np.isneginf(*args, **kwargs)
 
@@ -192,7 +196,7 @@ def isinf(a, out=None):
         out.is_boolean = True
         return out
     else:
-        res = clarray.empty(queue, a.shape, dtype=np.uint32)
+        res = empty(a.shape, dtype=np.uint32)
         run.isposinf(queue, (a.size,), None, a.data, res.data)
         res.is_boolean = True
         return res

@@ -72,27 +72,31 @@ class myclArray(clarray.Array):
 
     def __getitem__(self, index):
         if isinstance(index, myclArray) and index.is_boolean == True:
-            print("index is myclArray")
+            #print("index is myclArray")
             x, y, z = algorithm.copy_if(self.reshape((self.size,)), "index[i]!=0", [("index", index.reshape((index.size,)))])
             _res = x[:y.get()]
             res = myclArray(queue, _res.shape, _res.dtype, data=_res.data)
         else:
-            print("index is not myclArray, but", type(index))
+            #print("index is not myclArray, but", type(index))
             res = clarray.Array.__getitem__(self, index)
         return res
 
-    def __setitem__(self, subscript, value):
+    def __setitem__(self, subscript, _value):
+        if type(_value) in (type(0.4), type(-1)):
+            value = arr_from_np(np.array([_value], dtype=self.dtype))
+        else:
+            value = _value
         if isinstance(subscript, myclArray) and subscript.is_boolean == True:
             idxcl = clarray.arange(queue, 0, self.size, 1, dtype=np.int32)
-            print("subscript is myclArray")
+            #print("subscript is myclArray")
             x, y, z = algorithm.copy_if(idxcl, "index[i]!=0", [("index", subscript.reshape((subscript.size,)))])
             _res = x[:y.get()]
-            print(type(_res), _res.dtype.kind, _res)
+            #print(type(_res), _res.dtype.kind, _res)
             clarray.Array.setitem(self.reshape((self.size,)), _res, value, queue=queue)
             #reself = self.reshape((self.size,))
             #reself.setitem(_res, value)
         else:
-            print("subscript is not myclArray, but", type(subscript))
+            #print("subscript is not myclArray, but", type(subscript))
             self.setitem(subscript, value, queue=queue)
         #return res
 

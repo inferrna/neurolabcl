@@ -97,7 +97,7 @@ class myclArray(clarray.Array):
             #reself.setitem(_res, value)
         else:
             #print("subscript is not myclArray, but", type(subscript))
-            self.setitem(subscript, value, queue=queue)
+            self.setitem(subscript, _value, queue=queue)
         #return res
 
 

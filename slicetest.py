@@ -3,21 +3,22 @@ import pyopencl as cl
 from pyopencl import array
 
 def mislice(gid, params):
-    N, d, x, y = params[-1]
-    ipg = 1+(min(N, y)-(x%N)-1)//d  #Items per group
-    print("Items per group is", ipg)
-    s = x//N                        #Group shift
-    print("Shift is", s)
-    group = s+gid//ipg              #Current group
-    if len(params)>1: group = mislice(group, params[:-1])
-    print("Current group is", group)
-    groupstart = group*N            #Start index of group
-    print("Start index of group is", groupstart)
-    cmd = gid%ipg                   #Current modulo
-    print("Current modulo is", cmd)
-    groupid = x%N+cmd*d             #Index of modulo in current group
-    print("Index of modulo in current grop is", groupid)
-    return  groupid+groupstart      #Index in all array
+    
+        N, d, x, y = params[-1]
+        ipg = 1+(min(N, y)-(x%N)-1)//d  #Items per group
+        print("Items per group is", ipg)
+        s = x//N                        #Group shift
+        print("Shift is", s)
+        group = s+gid//ipg              #Current group
+        if len(params)>1: group = mislice(group, params[:-1])
+        print("Current group is", group)
+        groupstart = group*N            #Start index of group
+        print("Start index of group is", groupstart)
+        cmd = gid%ipg                   #Current modulo
+        print("Current modulo is", cmd)
+        groupid = x%N+cmd*d             #Index of modulo in current group
+        print("Index of modulo in current grop is", groupid)
+        return  groupid+groupstart      #Index in all array
 
 """
 x%N+cmd*d + group*N
@@ -34,7 +35,7 @@ gpusrc = """
 #define dtype uint
 #define PC 3 //Dimensions count
 
-uint slice(uint id, __global uint4 *params, uint c){
+uint slice2(uint id, __global uint4 *params, uint c){
     uint N = params[id].s0;
     uint d = params[id].s1;
     uint x = params[id].s2;
@@ -42,7 +43,34 @@ uint slice(uint id, __global uint4 *params, uint c){
     uint ipg = 1+(min(N, y)-(x%N)-1)/d;
     uint s = x/N;
     uint group = s+id/ipg;
-    if(c>0) group = slice(group, params, c-1);
+    uint groupstart = group*N;
+    uint cmd = id%ipg;
+    uint groupid = x%N+cmd*d;
+    return  groupid+groupstart;
+}
+uint slice1(uint id, __global uint4 *params, uint c){
+    uint N = params[id].s0;
+    uint d = params[id].s1;
+    uint x = params[id].s2;
+    uint y = params[id].s3;
+    uint ipg = 1+(min(N, y)-(x%N)-1)/d;
+    uint s = x/N;
+    uint group = s+id/ipg;
+    group = slice2(group, params, c-1);
+    uint groupstart = group*N;
+    uint cmd = id%ipg;
+    uint groupid = x%N+cmd*d;
+    return  groupid+groupstart;
+}
+uint slice0(uint id, __global uint4 *params, uint c){
+    uint N = params[id].s0;
+    uint d = params[id].s1;
+    uint x = params[id].s2;
+    uint y = params[id].s3;
+    uint ipg = 1+(min(N, y)-(x%N)-1)/d;
+    uint s = x/N;
+    uint group = s+id/ipg;
+    group = slice1(group, params, c-1);
     uint groupstart = group*N;
     uint cmd = id%ipg;
     uint groupid = x%N+cmd*d;
@@ -51,7 +79,7 @@ uint slice(uint id, __global uint4 *params, uint c){
 
 __kernel void mislice(__global uint4 *params, __global dtype *data, __global dtype *result){
     uint gid = get_global_id(0);
-    result[gid] = slice(gid, params, PC-1);
+    result[gid] = slice0(gid, params, PC-1);
 }
 """
 

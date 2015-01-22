@@ -76,6 +76,13 @@ class myclArray(clarray.Array):
             x, y, z = algorithm.copy_if(self.reshape((self.size,)), "index[i]!=0", [("index", index.reshape((index.size,)))])
             _res = x[:y.get()]
             res = myclArray(queue, _res.shape, _res.dtype, data=_res.data)
+        elif isinstance(index, tuple):
+            def getslice(x, a):
+                if isinstance(x, slice):
+                    return x.indices(a)
+                elif isinstance(x, int):
+                    return slice(x, x+1).indices(a)
+            indices = [(a,)+getslice(b, a) for a, b in zip(self.shape, index)]
         else:
             #print("index is not myclArray, but", type(index))
             res = clarray.Array.__getitem__(self, index)

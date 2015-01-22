@@ -9,6 +9,49 @@ queue = cl.CommandQueue(ctx)
 Inf = np.Inf
 mf = cl.mem_flags
 
+programcache = {}
+
+typemaps = {
+np.int8.__name__:    "char",
+np.int16.__name__:   "short",
+np.int32.__name__:   "int",
+np.int64.__name__:   "long",
+np.uint8.__name__:   "uchar",
+np.uint16.__name__:  "ushort",
+np.uint32.__name__:  "uint",
+np.uint64.__name__:  "ulong",
+np.float16.__name__: "half",
+np.float32.__name__: "float",
+np.float64.__name__: "double"}
+
+slicedefs = """
+#define dtype {0}
+#define PC {1} //Dimensions count
+"""
+slicesrc = """
+uint slice(uint id, __global uint4 *params, uint c){
+    uint N = params[c].s0;
+    uint x = params[c].s1;
+    uint y = params[c].s2;
+    uint d = params[c].s3;
+    //printf("N=%d\\n", N);
+    uint ipg = 1+(min(N, y)-(x%N)-1)/d;
+    uint s = x/N;
+    uint group = s+id/ipg;
+    if(c>0) group = slice(group, params, c-1);
+    uint groupstart = group*N;
+    uint cmd = id%ipg;
+    uint groupid = x%N+cmd*d;
+    return  groupid+groupstart;
+}
+
+__kernel void mislice(__global uint4 *params, __global dtype *data, __global dtype *result){
+    uint gid = get_global_id(0);
+    result[gid] = data[slice(gid, params, PC-1)];
+}
+"""
+
+
 signsrc = """
 __kernel void asign(__global float *inpt, __global float *outpt){
     uint gid = get_global_id(0);
@@ -82,7 +125,19 @@ class myclArray(clarray.Array):
                     return x.indices(a)
                 elif isinstance(x, int):
                     return slice(x, x+1).indices(a)
-            indices = [(a,)+getslice(b, a) for a, b in zip(self.shape, index)]
+            npindices = np.array([(a,)+getslice(b, a) for a, b in zip(self.shape, index)], dtype=np.uint32)
+            newshape = [1+(a[2]-a[1]-1)//a[3] for a in npindices]
+            indices = arr_from_np(npindices)
+            print("indices == ", npindices)
+            print("newshape == ", newshape)
+            key = (self.dtype, self.shape, 'get')
+            if not key in programcache.keys():
+                ksource = slicedefs.format(typemaps[self.dtype.name], len(self.shape)) + slicesrc
+                programcache[key] = cl.Program(ctx, ksource).build()
+                print(ksource)
+            result = empty(newshape, self.dtype)
+            programcache[key].mislice(queue, (result.size,), None, indices.data, self.data, result.data)
+            return result
         else:
             #print("index is not myclArray, but", type(index))
             res = clarray.Array.__getitem__(self, index)

@@ -105,13 +105,24 @@ def initnw(layer):
     cn = layer.cn
     w_fix = 0.7 * cn ** (1. / ci)
     w_rand = np.random.rand(cn, ci) * 2 - 1
+    print("0type(w_rand) == ", type(w_rand))
+    print("0.1type(w_rand) == ", type(np.abs(w_rand)))
     # Normalize
     if ci == 1:
         w_rand = w_rand / np.abs(w_rand)
     else:
-        w_rand = np.sqrt(1. / np.square(w_rand).sum(axis=1).reshape(cn, 1)) * w_rand
+        print("w_rand.shape == ", w_rand.shape)
+        print("np.sqrt(1. / np.square(w_rand).sum(axis=1).reshape(cn, 1)).shape == ",
+               np.sqrt(1. / np.square(w_rand).sum(axis=1).reshape(cn, 1)).shape)
+        w_rand = w_rand * np.sqrt(1. / np.square(w_rand).sum(axis=1).reshape(cn, 1))
 
+    print("1type(w_rand) == ", type(w_rand))
+    print("0type(w_fix) == ", type(w_fix))
     w = w_fix * w_rand
+    print("0type(w) == ", type(w))
+    #print("0shape w_fix == ", w_fix.shape)
+    print("0shape np.linspace(-1, 1, cn) == ", np.linspace(-1, 1, cn).shape)
+    print("0shape np.sign(w[:, 0]) == ", np.sign(w[:, 0]).shape)
     b = np.array([0]) if cn == 1 else w_fix * np.linspace(-1, 1, cn) * np.sign(w[:, 0])
 
     # Scaleble to inp_active
@@ -121,7 +132,9 @@ def initnw(layer):
 
     x = 0.5 * (amax - amin)
     y = 0.5 * (amax + amin)
+    print("1type(w) == ", type(w))
     w = x * w
+    print("2type(w) == ", type(w))
     b = x * b + y
 
     # Scaleble to inp_minmax
@@ -136,11 +149,21 @@ def initnw(layer):
     minmax[np.isinf(minmax)] = 1
 
     x = 2. / (minmax[:, 1] - minmax[:, 0])
+    print("x.shape == ", x.shape)
+    print("type(x) == ", type(x))
+    print("w.shape == ", w.shape)
+    print("3type(w) == ", type(w))
     y = 1. - minmax[:, 1] * x
     w = w * x
-    b = np.dot(w, y) + b
+    print("b.shape == ", b.shape)
+    print("dot.shape == ", np.dot(w, y).shape)
 
+    b = b + np.dot(w, y)
+
+    print("w.shape == ", w.shape)
     layer.np['w'][:] = w
+    print("b.shape == ", b.shape)
+    print("layer.np['b'].shape == ", layer.np['b'][:].shape)
     layer.np['b'][:] = b
 
     return

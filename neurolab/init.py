@@ -106,7 +106,7 @@ def initnw(layer):
     w_fix = 0.7 * cn ** (1. / ci)
     w_rand = np.random.rand(cn, ci) * 2 - 1
     print("0type(w_rand) == ", type(w_rand))
-    print("0.1type(w_rand) == ", type(np.abs(w_rand)))
+    print("0.1type(w_rand) == ", type(np.square(w_rand)))
     # Normalize
     if ci == 1:
         w_rand = w_rand / np.abs(w_rand)

@@ -51,12 +51,11 @@ __kernel void mitransp(__global uint *olddims, __global uint *replaces,
 sumsrc = """
 __kernel void misum(__global dtype *data, __global dtype *result){
     uint gid = get_global_id(0);
-    uint newid = gid/PC;
     dtype res = 0;
-    for(uint i = newid*PC; i<newid*PC+PC; i++){
+    for(uint i = gid*PC; i<gid*PC+PC; i++){
         res += data[i];
     }
-    result[newid] = res;
+    result[gid] = res;
 }
 """
 

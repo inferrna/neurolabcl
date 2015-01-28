@@ -3,6 +3,8 @@ import pyopencl as cl
 from pyopencl import clrandom, clmath
 from pyopencl import array as clarray
 from pyopencl import algorithm
+import clsrc
+
 ctx = cl.create_some_context()
 queue = cl.CommandQueue(ctx)
 #random = np.random
@@ -24,61 +26,6 @@ np.float16.__name__: "half",
 np.float32.__name__: "float",
 np.float64.__name__: "double"}
 
-slicedefs = """
-#define dtype {0}
-#define PC {1} //Dimensions count
-"""
-slicesrc = """
-uint slice(uint id, __global uint4 *params, uint c){
-    uint N = params[c].s0;
-    uint x = params[c].s1;
-    uint y = params[c].s2;
-    uint d = params[c].s3;
-    uint ipg = 1+(min(N, y)-(x%N)-1)/d;
-    uint s = x/N;
-    uint group = s+id/ipg;
-    if(c>0) group = slice(group, params, c-1);
-    uint groupstart = group*N;
-    uint cmd = id%ipg;
-    uint groupid = x%N+cmd*d;
-    return  groupid+groupstart;
-}
-"""
-slicegetsrc = """
-__kernel void mislice(__global uint4 *params, __global dtype *data, __global dtype *result){
-    uint gid = get_global_id(0);
-    result[gid] = data[slice(gid, params, PC-1)];
-}
-"""
-slicesetsrc = """
-__kernel void mislice(__global uint4 *params, __global dtype *data, __global dtype *source){
-    uint gid = get_global_id(0);
-    data[slice(gid, params, PC-1)] = source[gid];
-}
-"""
-
-
-signsrc = """
-__kernel void asign(__global float *inpt, __global float *outpt){
-    uint gid = get_global_id(0);
-    float res = copysign(1, inpt[gid]);
-    outpt[gid] = res; 
-}\n
-"""
-isinfsrc = """
-__kernel void isposinf(__global float *inpt, __global uint *outpt){
-    uint gid = get_global_id(0);
-    float val = inpt[gid];
-    float res = isinf(val);
-    outpt[gid] = res;
-}\n
-__kernel void isneginf(__global float *inpt, __global uint *outpt){
-    uint gid = get_global_id(0);
-    float val = inpt[gid];
-    float res =  signbit(val) * isinf(val);
-    outpt[gid] = res;
-}\n
-"""
 
 class myclArray(clarray.Array):
     def __init__(self, *args, **kwargs):
@@ -152,7 +99,7 @@ class myclArray(clarray.Array):
             indices, newshape = self.createshapes(index)
             key = (self.dtype, len(self.shape), 'get')
             if not key in programcache.keys():
-                ksource = slicedefs.format(typemaps[self.dtype.name], len(self.shape)) + slicesrc + slicegetsrc
+                ksource = clsrc.slicedefs.format(typemaps[self.dtype.name], len(self.shape)) + clsrc.slicesrc + clsrc.slicegetsrc
                 programcache[key] = cl.Program(ctx, ksource).build()
             _res = empty(newshape, self.dtype)
             programcache[key].mislice(queue, (_res.size,), None, indices.data, self.data, _res.data)
@@ -161,6 +108,24 @@ class myclArray(clarray.Array):
             _res = clarray.Array.__getitem__(self, index)
         _res.__class__ = myclArray
         return _res
+
+    def transpose(self, *args):
+        replaces = np.array(args, dtype=np.uint32)
+        print(replaces)
+        olddims = np.array(self.shape, dtype=np.uint32)
+        result = empty(tuple(olddims[replaces]), self.dtype)
+        clolddims = cl.Buffer(ctx, mf.READ_ONLY| mf.COPY_HOST_PTR, hostbuf=olddims)
+        clreplaces = cl.Buffer(ctx, mf.READ_ONLY| mf.COPY_HOST_PTR, hostbuf=replaces)
+        key = (self.dtype, self.ndim, 'transpose')
+        if not key in programcache.keys():
+            ksource = clsrc.slicedefs.format(typemaps[self.dtype.name], self.ndim) + clsrc.transpsrc
+            programcache[key] = cl.Program(ctx, ksource).build()
+            #print(ksource)
+        
+        #print("type(value) == ", type(value))
+        programcache[key].mitransp(queue, (self.size,), None, clolddims, clreplaces, self.data, result.data)
+        return result
+
 
     def __setitem__(self, subscript, _value):
         if isinstance(_value, myclArray) or 'myclArray' in str(type(_value)):
@@ -182,7 +147,7 @@ class myclArray(clarray.Array):
             indices, newshape = self.createshapes(subscript)
             key = (self.dtype, len(self.shape), 'set')
             if not key in programcache.keys():
-                ksource = slicedefs.format(typemaps[self.dtype.name], len(self.shape)) + slicesrc + slicesetsrc
+                ksource = clsrc.slicedefs.format(typemaps[self.dtype.name], len(self.shape)) + clsrc.slicesrc + clsrc.slicesetsrc
                 programcache[key] = cl.Program(ctx, ksource).build()
                 print(ksource)
             result = empty(newshape, self.dtype)
@@ -249,7 +214,7 @@ class myclArray(clarray.Array):
     def flatten(self):
         return self.ravel()
 
-run = cl.Program(ctx, signsrc+isinfsrc).build()
+run = cl.Program(ctx, clsrc.signsrc+clsrc.isinfsrc).build()
 
 #randomeer.uniform(queue, (10,2,), np.float32, a=-0.5, b=0.5)
 #np.random.uniform(-0.5, 0.5, (10, 2))

@@ -208,7 +208,9 @@ class myclArray(clarray.Array):
         res.__class__ = myclArray
         print("type res == ", type(res))
         return res
+
     def sum(*args, **kwargs):
+
         return sum(*args, **kwargs)
 
     def flatten(self):
@@ -421,11 +423,34 @@ def zeros_like(a, dtype=None, order='K', subok=True):
 
 def sum(a, axis=None, dtype=None, out=None):
     #TODO: work with axis, out, keepdims
-    _res = clarray.sum(a, queue=queue) #np.sum(*args, **kwargs)
-    _res.__class__ = myclArray
-    res = _res#myclArray(queue, _res.shape, _res.dtype, data=_res.data)
-    if res.size==1: return res.get()
-    else: return res
+    if axis>0:
+        replaces = np.append(np.delete(np.arange(a.ndim), axis, 0), [axis], 0).astype(np.uint32)
+        olddims = np.array(a.shape, dtype=np.uint32)
+        clolddims = cl.Buffer(ctx, mf.READ_ONLY| mf.COPY_HOST_PTR, hostbuf=olddims)
+        clreplaces = cl.Buffer(ctx, mf.READ_ONLY| mf.COPY_HOST_PTR, hostbuf=replaces)
+        cltrresult = cl.Buffer(ctx, mf.READ_WRITE, a.nbytes)
+        key = (a.dtype, a.ndim, 'transpose')
+        if not key in programcache.keys():
+            ksource = clsrc.slicedefs.format(typemaps[a.dtype.name], a.ndim) + clsrc.transpsrc
+            programcache[key] = cl.Program(ctx, ksource).build()
+            #print(ksource)
+        programcache[key].mitransp(queue, (a.size,), None, clolddims, clreplaces, a.data, cltrresult)
+
+        key = (a.dtype, a.shape[axis], 'sum')
+        if not key in programcache.keys():
+            ksource  = clsrc.slicedefs.format(typemaps[a.dtype.name], a.shape[axis]) + clsrc.sumsrc
+            programcache[key] = cl.Program(ctx, ksource).build()
+        result = empty(tuple(olddims[replaces[:-1]]), a.dtype)
+        programcache[key].misum(queue, (a.size//a.shape[axis],), None, cltrresult, result.data)
+        result.__class__ = myclArray
+        #print("type(value) == ", type(value))
+        return result
+    else:
+        _res = clarray.sum(a, queue=queue) #np.sum(*args, **kwargs)
+        _res.__class__ = myclArray
+        res = _res#myclArray(queue, _res.shape, _res.dtype, data=_res.data)
+        if res.size==1: return res.get()
+        else: return res
 
 def sin(arr):
     #TODO: work with axis, out, keepdims

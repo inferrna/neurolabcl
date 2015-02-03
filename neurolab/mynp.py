@@ -151,8 +151,13 @@ class myclArray(clarray.Array):
                 programcache[key] = cl.Program(ctx, ksource).build()
                 print(ksource)
             result = empty(newshape, self.dtype)
+            assert value.size == result.size or value.size == 1, "Size of value array {0} does not match size of result indices {1}"\
+                                                                 .format(value.size, result.size)
             print("type(value) == ", type(value))
-            programcache[key].mislice(queue, (result.size,), None, indices.data, self.data, value.data)
+            if value.size == result.size: 
+                programcache[key].mislice(queue, (result.size,), None, indices.data, self.data, value.data)
+            elif value.size == 1:
+                programcache[key].mislicesingle(queue, (result.size,), None, indices.data, self.data, value.data)
             #return result
             #reself.setitem(_res, value)
         else:
@@ -194,6 +199,8 @@ class myclArray(clarray.Array):
 
     def __mul__(self, other):
         if isinstance(other, myclArray):
+            if(self.size<2 and other.size>2):
+                self, other = other, self
             if other.size<2:
                 if other.size == 1:
                     _res = clarray.Array.__mul__(self, other.get()[0])
@@ -423,20 +430,25 @@ def zeros_like(a, dtype=None, order='K', subok=True):
 
 def sum(a, axis=None, dtype=None, out=None):
     #TODO: work with axis, out, keepdims
-    if axis>0:
-        replaces = np.append(np.delete(np.arange(a.ndim), axis, 0), [axis], 0).astype(np.uint32)
-        olddims = np.array(a.shape, dtype=np.uint32)
-        clolddims = cl.Buffer(ctx, mf.READ_ONLY| mf.COPY_HOST_PTR, hostbuf=olddims)
-        clreplaces = cl.Buffer(ctx, mf.READ_ONLY| mf.COPY_HOST_PTR, hostbuf=replaces)
-        cltrresult = cl.Buffer(ctx, mf.READ_WRITE, a.nbytes)
-        key = (a.dtype, a.ndim, 'transpose')
-        if not key in programcache.keys():
-            ksource = clsrc.slicedefs.format(typemaps[a.dtype.name], a.ndim) + clsrc.transpsrc
-            programcache[key] = cl.Program(ctx, ksource).build()
-            #print(ksource)
-        programcache[key].mitransp(queue, (a.size,), None, clolddims, clreplaces, a.data, cltrresult)
+    if not axis==None and a.ndim>1:
+        #Transpose first to shift target axis to the end
+        #do not transpose if axis already is the end
+        if axis == a.ndim-1:
+            replaces = np.append(np.delete(np.arange(a.ndim), axis, 0), [axis], 0).astype(np.uint32)
+            olddims = np.array(a.shape, dtype=np.uint32)
+            clolddims = cl.Buffer(ctx, mf.READ_ONLY| mf.COPY_HOST_PTR, hostbuf=olddims)
+            clreplaces = cl.Buffer(ctx, mf.READ_ONLY| mf.COPY_HOST_PTR, hostbuf=replaces)
+            cltrresult = cl.Buffer(ctx, mf.READ_WRITE, a.nbytes)
+            key = (a.dtype, a.ndim, 'transpose')
+            if not key in programcache.keys():
+                ksource = clsrc.slicedefs.format(typemaps[a.dtype.name], a.ndim) + clsrc.transpsrc
+                programcache[key] = cl.Program(ctx, ksource).build()
+            programcache[key].mitransp(queue, (a.size,), None, clolddims, clreplaces, a.data, cltrresult)
+        else:
+            cltrresult = a.data
 
         key = (a.dtype, a.shape[axis], 'sum')
+        #Sum for last axis
         if not key in programcache.keys():
             ksource  = clsrc.slicedefs.format(typemaps[a.dtype.name], a.shape[axis]) + clsrc.sumsrc
             programcache[key] = cl.Program(ctx, ksource).build()

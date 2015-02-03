@@ -166,6 +166,8 @@ class myclArray(clarray.Array):
         #return res
     def __add__(self, other):
         if isinstance(other, myclArray) and other.size<2:
+            if(self.size<2 and other.size>2):
+                self, other = other, self
             if other.size == 1:
                 _res = clarray.Array.__add__(self, other.get())
             elif other.size == 0:
@@ -183,11 +185,13 @@ class myclArray(clarray.Array):
     def __iadd__(self, other):
         print("Shapes is", self.shape, other.shape)
         if isinstance(other, myclArray) and other.size<2:
+            if(self.size<2 and other.size>2):
+                self, other = other, self
             if other.size == 1:
                 _res = clarray.Array.__iadd__(self, other.get())
             elif other.size == 0:
                 _res = clarray.Array.__iadd__(self, other.get())
-            else:
+            elif self.size == other.size:
                 _res = clarray.Array.__iadd__(self.reshape((self.size,)), other.reshape((other.size,)))
             #    assert False==True, "Unimlimented mul. shapes is {0} and {1}".format(self.shape, other.shape)
         else:

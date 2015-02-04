@@ -179,7 +179,7 @@ class myclArray(clarray.Array):
             _res = clarray.Array.__add__(self, other)
         _res.__class__ = myclArray
         res = _res#myclArray(queue, self.shape, _res.dtype, data=_res.data)
-        print("type res == ", type(res))
+        print("__add__. type res == ", type(res))
         return res
 
     def __iadd__(self, other):
@@ -198,7 +198,7 @@ class myclArray(clarray.Array):
             _res = clarray.Array.__iadd__(self, other)
         _res.__class__ = myclArray
         res = _res#myclArray(queue, self.shape, _res.dtype, data=_res.data)
-        print("type res == ", type(res))
+        print("__iadd__. type res == ", type(res))
         return res
 
     def __mul__(self, other):
@@ -217,7 +217,7 @@ class myclArray(clarray.Array):
             _res = clarray.Array.__mul__(self, other)
         res = _res#myclArray(queue, self.shape, _res.dtype, data=_res.data)
         res.__class__ = myclArray
-        print("type res == ", type(res))
+        print("__mul__. type res == ", type(res))
         return res
 
     def sum(*args, **kwargs):
@@ -465,8 +465,9 @@ def sum(a, axis=None, dtype=None, out=None):
         _res = clarray.sum(a, queue=queue) #np.sum(*args, **kwargs)
         _res.__class__ = myclArray
         res = _res#myclArray(queue, _res.shape, _res.dtype, data=_res.data)
-        if res.size==1: return res.get()
-        else: return res
+        #if res.size==1: return res.get()
+        #else: 
+        return res
 
 def sin(arr):
     #TODO: work with axis, out, keepdims

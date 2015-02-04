@@ -112,6 +112,10 @@ def initnw(layer):
         w_rand = w_rand / np.abs(w_rand)
     else:
         print("w_rand.shape == ", w_rand.shape)
+        print("type(np.sqrt(1. / np.square(w_rand))) == ",
+               type(np.sqrt(1. / np.square(w_rand))))
+        print("type(np.sqrt(1. / np.square(w_rand).sum(axis=1))) == ",
+               type(np.sqrt(1. / np.square(w_rand).sum(axis=1))))
         print("np.sqrt(1. / np.square(w_rand).sum(axis=1).reshape(cn, 1)).shape == ",
                np.sqrt(1. / np.square(w_rand).sum(axis=1).reshape(cn, 1)).shape)
         w_rand = w_rand * np.sqrt(1. / np.square(w_rand).sum(axis=1).reshape(cn, 1))

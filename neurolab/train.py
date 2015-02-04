@@ -246,7 +246,6 @@ class TrainSO(Train):
         self.lerr = 1e10
 
     def grad(self, x):
-        print("type(x) is ", type(x))
         self.x[:] = x
         gr = tool.ff_grad(self.net, self.input, self.target)[1]
         return gr

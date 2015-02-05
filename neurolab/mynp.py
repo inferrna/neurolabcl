@@ -178,9 +178,8 @@ class myclArray(clarray.Array):
 
     def __iadd__(self, other):
         print("__iadd__ Shapes is", self.shape, other.shape)
+        print("__iadd__ Strides is", self.strides)
         print("__iadd__ Dtypes is", self.dtype, other.dtype)
-        print("__iadd__ arrays is", self)
-        print(other)
         if isinstance(other, myclArray) and not self.shape == other.shape:
             if self.size<2 and other.size>2:
                 self, other = other, self
@@ -195,7 +194,8 @@ class myclArray(clarray.Array):
             _res = clarray.Array.__iadd__(self, other)
         res = _res
         print("__iadd__. type res == ", type(res))
-        print("__iadd__. res == ", res)
+        print("__iadd__. res.strides == ", res.strides)
+        print("__iadd__. res.shape == ", res.shape)
         return res
 
     def __mul__(self, other):
@@ -208,6 +208,9 @@ class myclArray(clarray.Array):
                 _res = empty(self.shape, self.dtype)
                 program.misinglemul(queue, (_res.size,), None, self.data, _res.data, other.data)
             else:
+                print("__mul__ strides is", self.strides)
+                print("__mul__ arrays is", self)
+                print(other)
                 _res = clarray.Array.__mul__(self, other.reshape(self.shape))
             #assert False==True, "Unimlimented mul"
         else:

@@ -73,10 +73,10 @@ class TrainDelta(Train):
             for inp, tar in zip(input, target):
                 out = net.step(inp)
                 err = tar - out
-                err.shape =  err.size, 1
-                inp.shape = 1, inp.size
+                err = err.reshape((err.size, 1,))
+                inp = inp.reshape((1, inp.size,))
                 layer.np['w'] += self.lr * err * inp
-                err.shape =  err.size
+                err = err.reshape((err.size,))
                 layer.np['b'] += self.lr * err
         return None
 ######delta>>>

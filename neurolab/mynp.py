@@ -4,28 +4,14 @@ from pyopencl import clrandom, clmath
 from pyopencl import array as clarray
 from pyopencl import algorithm
 import clsrc
+import clprograms
 
 ctx = cl.create_some_context()
 queue = cl.CommandQueue(ctx)
+programs = clprograms.programs(ctx)
 #random = np.random
 Inf = np.Inf
 mf = cl.mem_flags
-
-programcache = {}
-
-typemaps = {
-np.int8.__name__:    "char",
-np.int16.__name__:   "short",
-np.int32.__name__:   "int",
-np.int64.__name__:   "long",
-np.uint8.__name__:   "uchar",
-np.uint16.__name__:  "ushort",
-np.uint32.__name__:  "uint",
-np.uint64.__name__:  "ulong",
-np.float16.__name__: "half",
-np.float32.__name__: "float",
-np.float64.__name__: "double"}
-
 
 class myclArray(clarray.Array):
     def __init__(self, *args, **kwargs):
@@ -97,12 +83,9 @@ class myclArray(clarray.Array):
             _res = x[:y.get()]
         elif isinstance(index, tuple) or isinstance(index, slice):
             indices, newshape = self.createshapes(index)
-            key = (self.dtype, len(self.shape), 'get')
-            if not key in programcache.keys():
-                ksource = clsrc.slicedefs.format(typemaps[self.dtype.name], len(self.shape)) + clsrc.slicesrc + clsrc.slicegetsrc
-                programcache[key] = cl.Program(ctx, ksource).build()
+            program = programs.sliceget(self.dtype, len(self.shape), 'sliceget')
             _res = empty(newshape, self.dtype)
-            programcache[key].mislice(queue, (_res.size,), None, indices.data, self.data, _res.data)
+            program.mislice(queue, (_res.size,), None, indices.data, self.data, _res.data)
             return _res
         else: 
             _res = clarray.Array.__getitem__(self, index)
@@ -116,14 +99,9 @@ class myclArray(clarray.Array):
         result = empty(tuple(olddims[replaces]), self.dtype)
         clolddims = cl.Buffer(ctx, mf.READ_ONLY| mf.COPY_HOST_PTR, hostbuf=olddims)
         clreplaces = cl.Buffer(ctx, mf.READ_ONLY| mf.COPY_HOST_PTR, hostbuf=replaces)
-        key = (self.dtype, self.ndim, 'transpose')
-        if not key in programcache.keys():
-            ksource = clsrc.slicedefs.format(typemaps[self.dtype.name], self.ndim) + clsrc.transpsrc
-            programcache[key] = cl.Program(ctx, ksource).build()
-            #print(ksource)
-        
+        program = programs.transpose(self.dtype, self.ndim, 'transpose')
         #print("type(value) == ", type(value))
-        programcache[key].mitransp(queue, (self.size,), None, clolddims, clreplaces, self.data, result.data)
+        program.mitransp(queue, (self.size,), None, clolddims, clreplaces, self.data, result.data)
         return result
 
 
@@ -145,79 +123,99 @@ class myclArray(clarray.Array):
             #reself = self.reshape((self.size,))
         elif isinstance(subscript, tuple) or isinstance(subscript, slice):
             indices, newshape = self.createshapes(subscript)
-            key = (self.dtype, len(self.shape), 'set')
-            if not key in programcache.keys():
-                ksource = clsrc.slicedefs.format(typemaps[self.dtype.name], len(self.shape)) + clsrc.slicesrc + clsrc.slicesetsrc
-                programcache[key] = cl.Program(ctx, ksource).build()
-                print(ksource)
+            program = programs.sliceset(self.dtype, len(self.shape), 'sliceset')
             result = empty(newshape, self.dtype)
             assert value.size == result.size or value.size == 1, "Size of value array {0} does not match size of result indices {1}"\
                                                                  .format(value.size, result.size)
             print("type(value) == ", type(value))
             if value.size == result.size: 
-                programcache[key].mislice(queue, (result.size,), None, indices.data, self.data, value.data)
+                program.mislice(queue, (result.size,), None, indices.data, self.data, value.data)
             elif value.size == 1:
-                programcache[key].mislicesingle(queue, (result.size,), None, indices.data, self.data, value.data)
+                program.mislicesingle(queue, (result.size,), None, indices.data, self.data, value.data)
             #return result
             #reself.setitem(_res, value)
         else:
             #print("subscript is not myclArray, but", type(subscript))
             self.setitem(subscript, _value, queue=queue)
         #return res
-    def __add__(self, other):
-        if isinstance(other, myclArray) and other.size<2:
-            if(self.size<2 and other.size>2):
-                self, other = other, self
-            if other.size == 1:
-                _res = clarray.Array.__add__(self, other.get())
-            elif other.size == 0:
-                _res = clarray.Array.__add__(self, other.get())
+    def __sub__(self, other):
+        if isinstance(other, myclArray) and not self.shape == other.shape:
+            if self.size==1 and other.size==1:
+                addition = other.reshape(self.shape)
+            elif self.size<2 and other.size>2:
+                self, other = -other, self
+                addition = -other.get()
+            elif other.size==1:
+                addition = other.get()
             else:
-                _res = clarray.Array.__add__(self.reshape((self.size,)), other.reshape((other.size,)))
-            #    assert False==True, "Unimlimented mul. shapes is {0} and {1}".format(self.shape, other.shape)
+                addition = other
         else:
-            _res = clarray.Array.__add__(self, other)
+            addition = other
+        _res = clarray.Array.__sub__(self, addition)
+        _res.__class__ = myclArray
+        res = _res#myclArray(queue, self.shape, _res.dtype, data=_res.data)
+        print("__sub__. type res == ", type(res))
+        return res
+
+    def __add__(self, other):
+        if isinstance(other, myclArray) and not self.shape == other.shape:
+            if self.size==1 and other.size==1:
+                addition = other.reshape(self.shape)
+            elif self.size<2 and other.size>2:
+                self, other = other, self
+                addition = other.get()
+            elif other.size==1:
+                addition = other.get()
+            else:
+                addition = other
+        else:
+            addition = other
+        _res = clarray.Array.__add__(self, addition)
         _res.__class__ = myclArray
         res = _res#myclArray(queue, self.shape, _res.dtype, data=_res.data)
         print("__add__. type res == ", type(res))
         return res
 
     def __iadd__(self, other):
-        print("Shapes is", self.shape, other.shape)
-        if isinstance(other, myclArray) and other.size<2:
-            if(self.size<2 and other.size>2):
+        print("__iadd__ Shapes is", self.shape, other.shape)
+        print("__iadd__ Dtypes is", self.dtype, other.dtype)
+        print("__iadd__ arrays is", self)
+        print(other)
+        if isinstance(other, myclArray) and not self.shape == other.shape:
+            if self.size<2 and other.size>2:
                 self, other = other, self
             if other.size == 1:
-                _res = clarray.Array.__iadd__(self, other.get())
-            elif other.size == 0:
-                _res = clarray.Array.__iadd__(self, other.get())
+                program = programs.singlesms(self.dtype, 'singlesms')
+                program.misinglesum(queue, (self.size,), None, self.data, self.data, other.data)
+                _res = self
             elif self.size == other.size:
-                _res = clarray.Array.__iadd__(self.reshape((self.size,)), other.reshape((other.size,)))
+                _res = clarray.Array.__iadd__(self.reshape(self.size), other.reshape(self.size)).reshape(self.shape)
             #    assert False==True, "Unimlimented mul. shapes is {0} and {1}".format(self.shape, other.shape)
         else:
             _res = clarray.Array.__iadd__(self, other)
-        _res.__class__ = myclArray
-        res = _res#myclArray(queue, self.shape, _res.dtype, data=_res.data)
+        res = _res
         print("__iadd__. type res == ", type(res))
+        print("__iadd__. res == ", res)
         return res
 
     def __mul__(self, other):
         if isinstance(other, myclArray):
-            if(self.size<2 and other.size>2):
+            print("__mul__ Shapes is", self.shape, other.shape)
+            if self.size==1 and other.size>2:
                 self, other = other, self
-            if other.size<2:
-                if other.size == 1:
-                    _res = clarray.Array.__mul__(self, other.get()[0])
-                elif other.size == 0:
-                    _res = clarray.Array.__mul__(self, other.get())
+            if other.size == 1:
+                program = programs.singlesms(self.dtype, 'singlesms')
+                _res = empty(self.shape, self.dtype)
+                program.misinglemul(queue, (_res.size,), None, self.data, _res.data, other.data)
             else:
-                _res = clarray.Array.__mul__(self.reshape((self.size,)), other.reshape((other.size,)))
+                _res = clarray.Array.__mul__(self, other.reshape(self.shape))
             #assert False==True, "Unimlimented mul"
         else:
             _res = clarray.Array.__mul__(self, other)
         res = _res#myclArray(queue, self.shape, _res.dtype, data=_res.data)
         res.__class__ = myclArray
         print("__mul__. type res == ", type(res))
+        print("__mul__. res == ", res)
         return res
 
     def sum(*args, **kwargs):
@@ -437,27 +435,21 @@ def sum(a, axis=None, dtype=None, out=None):
     if not axis==None and a.ndim>1:
         #Transpose first to shift target axis to the end
         #do not transpose if axis already is the end
-        if axis == a.ndim-1:
-            replaces = np.append(np.delete(np.arange(a.ndim), axis, 0), [axis], 0).astype(np.uint32)
-            olddims = np.array(a.shape, dtype=np.uint32)
+        olddims = np.array(a.shape, dtype=np.uint32)
+        replaces = np.append(np.delete(np.arange(a.ndim), axis, 0), [axis], 0).astype(np.uint32)
+        if axis != a.ndim-1:
             clolddims = cl.Buffer(ctx, mf.READ_ONLY| mf.COPY_HOST_PTR, hostbuf=olddims)
             clreplaces = cl.Buffer(ctx, mf.READ_ONLY| mf.COPY_HOST_PTR, hostbuf=replaces)
             cltrresult = cl.Buffer(ctx, mf.READ_WRITE, a.nbytes)
-            key = (a.dtype, a.ndim, 'transpose')
-            if not key in programcache.keys():
-                ksource = clsrc.slicedefs.format(typemaps[a.dtype.name], a.ndim) + clsrc.transpsrc
-                programcache[key] = cl.Program(ctx, ksource).build()
-            programcache[key].mitransp(queue, (a.size,), None, clolddims, clreplaces, a.data, cltrresult)
+            program = programs.transpose(a.dtype, a.ndim, 'transpose')
+            program.mitransp(queue, (a.size,), None, clolddims, clreplaces, a.data, cltrresult)
         else:
             cltrresult = a.data
 
-        key = (a.dtype, a.shape[axis], 'sum')
+        program = programs.sum(a.dtype, a.shape[axis], 'sum')
         #Sum for last axis
-        if not key in programcache.keys():
-            ksource  = clsrc.slicedefs.format(typemaps[a.dtype.name], a.shape[axis]) + clsrc.sumsrc
-            programcache[key] = cl.Program(ctx, ksource).build()
         result = empty(tuple(olddims[replaces[:-1]]), a.dtype)
-        programcache[key].misum(queue, (a.size//a.shape[axis],), None, cltrresult, result.data)
+        program.misum(queue, (a.size//a.shape[axis],), None, cltrresult, result.data)
         result.__class__ = myclArray
         #print("type(value) == ", type(value))
         return result
@@ -477,10 +469,10 @@ def sin(arr):
     return res
 
 
-def zeros(*args, **kwargs):
-    if not 'dtype' in kwargs.keys():
-        kwargs['dtype'] = np.float32
-    return arr_from_np( np.zeros(*args, **kwargs) )
+def zeros(shape, dtype=np.float32, order='C'):
+    res = clarray.zeros(queue, shape, dtype, order)
+    res.__class__ = myclArray
+    return res
 
 def array(*args, **kwargs):
     if not 'dtype' in kwargs.keys():

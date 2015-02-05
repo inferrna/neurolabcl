@@ -264,9 +264,9 @@ class myrandom():
         
 def arr_from_np(nparr):
     if nparr.dtype == np.object:
-        print(type(nparr[0]))
-        print(nparr)
-        nparr = np.array(nparr, dtype=nparr[0].dtype)
+        print("arr_from_np", type(nparr[0]))
+        print("arr_from_np", nparr)
+        nparr = np.concatenate(nparr)
     buf = cl.Buffer(ctx, mf.READ_WRITE| mf.COPY_HOST_PTR, hostbuf=nparr)
     return myclArray(queue, nparr.shape, nparr.dtype, data=buf)
 

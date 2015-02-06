@@ -128,6 +128,7 @@ def initnw(layer):
     print("0shape np.linspace(-1, 1, cn) == ", np.linspace(-1, 1, cn).shape)
     print("0shape np.sign(w[:, 0]) == ", np.sign(w[:, 0]).shape)
     b = np.array([0]) if cn == 1 else w_fix * np.linspace(-1, 1, cn) * np.sign(w[:, 0])
+    print("0. type(b) == ", type(b))
 
     # Scaleble to inp_active
     amin, amax  = layer.transf.inp_active
@@ -159,10 +160,12 @@ def initnw(layer):
     print("3type(w) == ", type(w))
     y = 1. - minmax[:, 1] * x
     w = w * x
+    print("type(b) == ", type(b))
     print("b.shape == ", b.shape)
+    print("type(dot) == ", type(np.dot(w, y)))
     print("dot.shape == ", np.dot(w, y).shape)
 
-    b = b + np.dot(w, y)
+    b += np.dot(w, y)
 
     print("w.shape == ", w.shape)
     layer.np['w'][:] = w

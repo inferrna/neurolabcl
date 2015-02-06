@@ -138,48 +138,47 @@ class myclArray(clarray.Array):
             #print("subscript is not myclArray, but", type(subscript))
             self.setitem(subscript, _value, queue=queue)
         #return res
+
     def __sub__(self, other):
         if isinstance(other, myclArray) and not self.shape == other.shape:
-            if self.size==1 and other.size==1:
-                addition = other.reshape(self.shape)
-            elif self.size<2 and other.size>2:
-                self, other = -other, self
-                addition = -other.get()
-            elif other.size==1:
-                addition = other.get()
-            else:
-                addition = other
+            if self.size == 1 and other.size>2:
+                result = empty(other.shape, self.dtype)
+                program = programs.singlesms(self.dtype, 'singlesms')
+                program.misinglenegsub(queue, (self.size,), None, other.data, result.data, self.data)
+                _res = result
+            if other.size==1:
+                result = empty(self.shape, self.dtype)
+                program = programs.singlesms(self.dtype, 'singlesms')
+                program.misinglesub(queue, (self.size,), None, self.data, result.data, other.data)
+                _res = result
+            elif self.size == other.size:
+                _res = clarray.Array.__sub__(self, other)
         else:
-            addition = other
-        _res = clarray.Array.__sub__(self, addition)
+            _res = clarray.Array.__sub__(self, other)
         _res.__class__ = myclArray
         res = _res#myclArray(queue, self.shape, _res.dtype, data=_res.data)
-        print("__sub__. type res == ", type(res))
+        print("__add__. type res == ", type(res))
         return res
 
     def __add__(self, other):
         if isinstance(other, myclArray) and not self.shape == other.shape:
-            if self.size==1 and other.size==1:
-                addition = other.reshape(self.shape)
-            elif self.size<2 and other.size>2:
+            if self.size<2 and other.size>2:
                 self, other = other, self
-                addition = other.get()
-            elif other.size==1:
-                addition = other.get()
-            else:
-                addition = other
+            if other.size==1:
+                result = empty(self.shape, self.dtype)
+                program = programs.singlesms(self.dtype, 'singlesms')
+                program.misinglesum(queue, (self.size,), None, self.data, result.data, other.data)
+                _res = result
+            elif self.size == other.size:
+                _res = clarray.Array.__add__(self, other)
         else:
-            addition = other
-        _res = clarray.Array.__add__(self, addition)
+            _res = clarray.Array.__add__(self, other)
         _res.__class__ = myclArray
         res = _res#myclArray(queue, self.shape, _res.dtype, data=_res.data)
         print("__add__. type res == ", type(res))
         return res
 
     def __iadd__(self, other):
-        print("__iadd__ Shapes is", self.shape, other.shape)
-        print("__iadd__ Strides is", self.strides)
-        print("__iadd__ Dtypes is", self.dtype, other.dtype)
         if isinstance(other, myclArray) and not self.shape == other.shape:
             if self.size<2 and other.size>2:
                 self, other = other, self
@@ -291,11 +290,16 @@ def concatenate(arrays, axis=0):
     return res
 
 def dot(a, b, out=None):
-    #print("dot args==", [type(a) for a in args])
+    print("dot args==")
+    print(a)
+    print(b)
     #TODO: work with out
     _res = clarray.dot(a, b)#np.dot(*args, **kwargs)
     _res.__class__ = myclArray
     res = _res#myclArray(queue, _res.shape, _res.dtype, data=_res.data)
+    print("dot type ==", type(res))
+    print("dot res ==")
+    print(res)
     return res
     
 
@@ -371,7 +375,9 @@ def linspace(start, stop, num=50, endpoint=True, retstep=False, dtype=np.float32
     diff = (stop - start) / mnum
     if endpoint:
         stop = stop + diff
-    return clarray.arange(queue, start, stop, diff, dtype=np.float32)[:num]
+    res = clarray.arange(queue, start, stop, diff, dtype=np.float32)[:num]
+    res.__class__ = myclArray
+    return res
 
 
 def min(a):
@@ -439,7 +445,8 @@ def sign(a, out=None):
         run.asign(queue, (a.size,), None, a.data, out.data)
         return out
     else:
-        res = clarray.empty_like(a)
+        res = empty(a.shape, dtype=a.dtype)
+        res.__class__ = myclArray
         run.asign(queue, (a.size,), None, a.data, res.data)
         return res
 

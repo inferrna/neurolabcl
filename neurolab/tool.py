@@ -28,8 +28,8 @@ class Norm:
         min = np.min(x, axis=0)
         dist = np.max(x, axis=0) - min
 
-        min.shape = 1, min.size
-        dist.shape = 1, dist.size
+        min = min.reshape((1, min.size,)) #replacement for "        min.shape = 1, min.size"
+        dist = dist.reshape((1, dist.size,)) #replacement for "        dist.shape = 1, dist.size"
 
         self.min = min
         self.dist = dist
@@ -109,7 +109,7 @@ def np_set(net, np_data):
         for prop in l.np:
             size = l.np[prop].size
             values = np_data[start: start+size]
-            values.shape = l.np[prop].shape
+            values = values.reshape(l.np[prop].shape) #replacement for "            values.shape = l.np[prop].shape"
             l.np[prop][:] = values
             start += size
 
@@ -134,7 +134,7 @@ def np_get_ref(net):
         for k, v in l.np.items():
             x[st: st + v.size] = v.flatten()
             l.np[k] = x[st: st + v.size]
-            l.np[k].shape = v.shape
+            l.np[k] = l.np[k].reshape(v.shape) #replacement for "            l.np[k].shape = v.shape"
             st += v.size
     return x
 
@@ -174,7 +174,7 @@ def ff_grad_step(net, out, tar, grad=None):
     ln = len(net.layers) - 1
     layer = net.layers[ln]
     delt[ln] = net.errorf.deriv(e) * layer.transf.deriv(layer.s, out)
-    delt[ln].shape = delt[ln].size, 1
+    delt[ln] = delt[ln].reshape((delt[ln].size, 1,)) #replacement for "    delt[ln].shape = delt[ln].size, 1"
     print("grad[ln]['w']==", grad[ln]['w'])
     grad[ln]['w'] += delt[ln] * layer.inp
     grad[ln]['b'] += delt[ln].reshape(delt[ln].size)
@@ -186,7 +186,7 @@ def ff_grad_step(net, out, tar, grad=None):
 
         dS = np.sum(net.layers[next].np['w'] * delt[next], axis=0)
         delt[ln] = dS * layer.transf.deriv(layer.s, layer.out)
-        delt[ln].shape = delt[ln].size, 1
+        delt[ln] = delt[ln].reshape((delt[ln].size, 1,)) #replacement for "        delt[ln].shape = delt[ln].size, 1"
 
         grad[ln]['w'] += delt[ln] * layer.inp
         grad[ln]['b'] += delt[ln].reshape(delt[ln].size)
@@ -224,7 +224,7 @@ def ff_grad(net, input, target):
         grad.append({})
         for k, v in l.np.items():
             grad[i][k] = grad_flat[st: st + v.size]
-            grad[i][k].shape = v.shape
+            grad[i][k] = grad[i][k].reshape(v.shape) #replacement for "            grad[i][k].shape = v.shape"
             st += v.size
     output = []
     for inp, tar in zip(input, target):

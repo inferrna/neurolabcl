@@ -361,10 +361,17 @@ def exp(a, out=None):
     return res
 
 
-def linspace(*args, **kwargs):
+def linspace(start, stop, num=50, endpoint=True, retstep=False, dtype=np.float32):
     #TODO: create native function
     print("np.linspace called")
-    return arr_from_np( np.linspace(*args, **kwargs) )
+    if endpoint:
+        mnum = num-1
+    else:
+        mnum = num
+    diff = (stop - start) / mnum
+    if endpoint:
+        stop = stop + diff
+    return clarray.arange(queue, start, stop, diff, dtype=np.float32)[:num]
 
 
 def min(a):

@@ -226,12 +226,14 @@ def ff_grad(net, input, target):
             grad[i][k] = grad_flat[st: st + v.size]
             grad[i][k] = grad[i][k].reshape(v.shape) #replacement for "            grad[i][k].shape = v.shape"
             st += v.size
-    output = []
+    output = np.empty(shape = (len(target),)+net.out.shape)
+    i = 0
     for inp, tar in zip(input, target):
         out = net.step(inp)
         ff_grad_step(net, out, tar, grad)
-        output.append(out)
-    return grad, grad_flat, np.row_stack(output)
+        output[i] = out
+        i += 1
+    return grad, grad_flat, output
 
 
 def simhop(net, input, n=10):

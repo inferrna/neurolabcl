@@ -206,7 +206,11 @@ class myclArray(clarray.Array):
             if other.size == 1:
                 program = programs.singlesms(self.dtype, 'singlesms')
                 _res = empty(self.shape, self.dtype)
-                program.misinglemul(queue, (_res.size,), None, self.data, _res.data, other.data)
+                try:
+                    program.misinglemul(queue, (_res.size,), None, self.data, _res.data, other.data)
+                except:
+                    print("self is", self)
+                    print("other is", other)
             else:
                 print("__mul__ strides is", self.strides)
                 print("__mul__ arrays is", self)
@@ -276,6 +280,7 @@ def arr_from_np(nparr):
 random = myrandom()
 
 def argmin(*args, **kwargs):
+    print("np.argmin called")
     return arr_from_np(np.argmin(*args, **kwargs))
 
 
@@ -323,6 +328,8 @@ def ones_like(a, dtype=np.float32, order='K', subok=True):
 
 
 def row_stack(*args, **kwargs):
+    print("np.row_stack called on")
+    print(*args)
     return arr_from_np(np.row_stack(*args, **kwargs))
 
 
@@ -356,6 +363,7 @@ def exp(a, out=None):
 
 def linspace(*args, **kwargs):
     #TODO: create native function
+    print("np.linspace called")
     return arr_from_np( np.linspace(*args, **kwargs) )
 
 
@@ -390,6 +398,7 @@ def isinf(a, out=None):
 
 
 def items(*args, **kwargs):
+    print("np.items called")
     return np.items(*args, **kwargs)
 
 def max(a):
@@ -400,6 +409,7 @@ def abs(*args, **kwargs):
     if isinstance(arr, myclArray):
         return arr.__abs__()
     else:
+        print("np.abs called")
         return arr_from_np(np.abs(*args, **kwargs))
 
 def empty(shape, dtype=np.float32):
@@ -408,6 +418,7 @@ def empty(shape, dtype=np.float32):
 
 
 def argmax(*args, **kwargs):
+    print("np.argmax called")
     return arr_from_np(np.argmax(*args, **kwargs))
 
 

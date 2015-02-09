@@ -61,14 +61,18 @@ class myclArray(clarray.Array):
                 index = (index,)
             def getslice(x, a):
                 if isinstance(x, slice):
-                    return x.indices(a)
+                    if x.step<0:
+                        return slice(x.start, x.stop, -x.step).indices(a)[:2]+(x.step,)
+                    else:
+                        return x.indices(a)
                 elif isinstance(x, int):
                     return slice(x, x+1).indices(a)
             dl = len(self.shape) - len(index)
+            #Extend index to shape size if less.
             for i in range(0, dl):
                 index = index + (slice(0, self.shape[i-dl], 1),)
-            npindices = np.array([(a,)+getslice(b, a) for a, b in zip(self.shape, index)], dtype=np.uint32)
-            newshape = [1+(a[2]-a[1]-1)//a[3] for a in npindices]
+            npindices = np.array([(a,)+getslice(b, a) for a, b in zip(self.shape, index)], dtype=np.int32)
+            newshape = [1+(a[2]-a[1]-1)//a[3].__abs__() for a in npindices]
             newshape = tuple([a for a, b in zip(newshape, self.shape) if not a==1])
             if newshape == (): newshape = (1,)
             indices = arr_from_np(npindices)
@@ -368,6 +372,7 @@ def exp(a, out=None):
 def linspace(start, stop, num=50, endpoint=True, retstep=False, dtype=np.float32):
     #TODO: create native function
     print("np.linspace called")
+    if num<2: return array([start])
     if endpoint:
         mnum = num-1
     else:

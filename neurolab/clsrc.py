@@ -3,33 +3,35 @@ slicedefs = """
 #define PC {1} //Dimensions count
 """
 slicesrc = """
-uint slice(uint id, __global uint4 *params, uint c){
-    uint N = params[c].s0;
-    uint x = params[c].s1;
-    uint y = params[c].s2;
-    uint d = params[c].s3;
-    uint ipg = 1+(min(N, y)-(x%N)-1)/d;
-    uint s = x/N;
-    uint group = s+id/ipg;
+uint slice(uint id, __global int4 *params, uint c){
+    int N = params[c].s0;
+    int x = params[c].s1;
+    int y = params[c].s2;
+    int d = abs(params[c].s3);
+    int minny = min(N, y);
+    int sd = params[c].s3/d; //Sign
+    int ipg = 1+(minny-(x%N)-1)/d;
+    int group = id/ipg;
     if(c>0) group = slice(group, params, c-1);
-    uint groupstart = group*N;
-    uint cmd = id%ipg;
-    uint groupid = x%N+cmd*d;
+    int groupstart = group*N;
+    int cmd = id%ipg;
+    printf("cmd == %d\\n", cmd);
+    int groupid = x+(minny-1-x)*((1-sd)/2)+sd*cmd*d;
     return  groupid+groupstart;
 }
 """
 slicegetsrc = """
-__kernel void mislice(__global uint4 *params, __global dtype *data, __global dtype *result){
+__kernel void mislice(__global int4 *params, __global dtype *data, __global dtype *result){
     uint gid = get_global_id(0);
     result[gid] = data[slice(gid, params, PC-1)];
 }
 """
 slicesetsrc = """
-__kernel void mislice(__global uint4 *params, __global dtype *data, __global dtype *source){
+__kernel void mislice(__global int4 *params, __global dtype *data, __global dtype *source){
     uint gid = get_global_id(0);
     data[slice(gid, params, PC-1)] = source[gid];
 }
-__kernel void mislicesingle(__global uint4 *params, __global dtype *data, __global dtype *source){
+__kernel void mislicesingle(__global int4 *params, __global dtype *data, __global dtype *source){
     uint gid = get_global_id(0);
     __local dtype value;
     if(get_local_id(0) == 0){

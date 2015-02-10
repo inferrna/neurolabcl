@@ -61,7 +61,7 @@ class myclArray(clarray.Array):
                 index = (index,)
             def getslice(x, a):
                 if isinstance(x, slice):
-                    if x.step<0:
+                    if x.step and x.step<0:
                         return slice(x.start, x.stop, -x.step).indices(a)[:2]+(x.step,)
                     else:
                         return x.indices(a)
@@ -116,6 +116,9 @@ class myclArray(clarray.Array):
             value = arr_from_np(np.array([_value], dtype=self.dtype))
         elif isinstance(_value, np.ndarray):
             value = arr_from_np(_value).astype(self.dtype)
+        else:
+            print("Can not determine type of", type(_value))
+            exit()
 
         if isinstance(subscript, myclArray) and subscript.is_boolean == True:
             idxcl = clarray.arange(queue, 0, self.size, 1, dtype=np.int32)

@@ -7,4 +7,3 @@ s = re.sub('^([ \t\r\f\v]*)(.+?)\.shape = (\S+?)$', '\g<1>\g<2> = \g<2>.reshape(
 f = open("neurolab/newtool.py", "w")
 f.write(s)
 f.close()
-print("vimdiff neurolab/newtool.py neurolab/tool.py")

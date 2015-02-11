@@ -44,7 +44,6 @@ class programs():
             slicesrcl.reverse()
             slicesrc = "\n".join(slicesrcl).replace("<%", "{").replace("%>", "}")+"\n"
             ksource = clsrc.slicedefs.format(typemaps[dtype.name], ndim) + slicesrc + clsrc.slicegetsrc
-            print(ksource)
             programcache[args] = cl.Program(self.ctx, ksource).build()
         return programcache[args]
 
@@ -58,7 +57,6 @@ class programs():
             findpsrcl.reverse()
             findpsrc = "\n".join(findpsrcl).replace("<%", "{").replace("%>", "}")+"\n"
             ksource = clsrc.slicedefs.format(typemaps[dtype.name], ndim) + findpsrc + clsrc.transpsrc
-            print(ksource)
             programcache[args] = cl.Program(self.ctx, ksource).build()
         return programcache[args]
 

@@ -81,7 +81,6 @@ clresult = cl.Buffer(ctx, mf.READ_WRITE, transposed.nbytes)
 result = np.empty(transposed.shape).astype(np.uint32)
 #run.mitransp(queue, (arr.size,), None, clolddims, clreplaces, clarr, clresult)
 #cl.enqueue_copy(queue, result, clresult)
-#print(result)
 
 axis = 2
 replaces = np.append(np.delete(np.arange(arr.ndim), axis, 0), [axis], 0).astype(np.uint32)

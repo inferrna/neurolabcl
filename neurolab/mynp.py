@@ -76,13 +76,10 @@ class myclArray(clarray.Array):
             newshape = tuple([a for a, b in zip(newshape, self.shape) if not a==1])
             if newshape == (): newshape = (1,)
             indices = arr_from_np(npindices)
-            print("indices == ", npindices)
-            print("newshape == ", newshape)
             return indices, newshape
 
     def __getitem__(self, index):
         if isinstance(index, myclArray) and index.is_boolean == True:
-            #print("index is myclArray")
             x, y, z = algorithm.copy_if(self.reshape((self.size,)), "index[i]!=0", [("index", index.reshape((index.size,)))])
             _res = x[:y.get()]
         elif isinstance(index, tuple) or isinstance(index, slice):
@@ -98,13 +95,11 @@ class myclArray(clarray.Array):
 
     def transpose(self, *args):
         replaces = np.array(args, dtype=np.uint32)
-        print(replaces)
         olddims = np.array(self.shape, dtype=np.uint32)
         result = empty(tuple(olddims[replaces]), self.dtype)
         clolddims = cl.Buffer(ctx, mf.READ_ONLY| mf.COPY_HOST_PTR, hostbuf=olddims)
         clreplaces = cl.Buffer(ctx, mf.READ_ONLY| mf.COPY_HOST_PTR, hostbuf=replaces)
         program = programs.transpose(self.dtype, self.ndim, 'transpose')
-        #print("type(value) == ", type(value))
         program.mitransp(queue, (self.size,), None, clolddims, clreplaces, self.data, result.data)
         return result
 
@@ -117,15 +112,12 @@ class myclArray(clarray.Array):
         elif isinstance(_value, np.ndarray):
             value = arr_from_np(_value).astype(self.dtype)
         else:
-            print("Can not determine type of", type(_value))
             exit()
 
         if isinstance(subscript, myclArray) and subscript.is_boolean == True:
             idxcl = clarray.arange(queue, 0, self.size, 1, dtype=np.int32)
-            #print("subscript is myclArray")
             x, y, z = algorithm.copy_if(idxcl, "index[i]!=0", [("index", subscript.reshape((subscript.size,)))])
             _res = x[:y.get()]
-            #print(type(_res), _res.dtype.kind, _res)
             clarray.Array.setitem(self.reshape((self.size,)), _res, value, queue=queue)
             #reself = self.reshape((self.size,))
         elif isinstance(subscript, tuple) or isinstance(subscript, slice):
@@ -134,7 +126,6 @@ class myclArray(clarray.Array):
             result = empty(newshape, self.dtype)
             assert value.size == result.size or value.size == 1, "Size of value array {0} does not match size of result indices {1}"\
                                                                  .format(value.size, result.size)
-            print("type(value) == ", type(value))
             if value.size == result.size: 
                 program.mislice(queue, (result.size,), None, indices.data, self.data, value.data)
             elif value.size == 1:
@@ -142,7 +133,6 @@ class myclArray(clarray.Array):
             #return result
             #reself.setitem(_res, value)
         else:
-            #print("subscript is not myclArray, but", type(subscript))
             self.setitem(subscript, _value, queue=queue)
         #return res
 
@@ -164,7 +154,6 @@ class myclArray(clarray.Array):
             _res = clarray.Array.__sub__(self, other)
         _res.__class__ = myclArray
         res = _res#myclArray(queue, self.shape, _res.dtype, data=_res.data)
-        print("__add__. type res == ", type(res))
         return res
 
     def __add__(self, other):
@@ -182,7 +171,6 @@ class myclArray(clarray.Array):
             _res = clarray.Array.__add__(self, other)
         _res.__class__ = myclArray
         res = _res#myclArray(queue, self.shape, _res.dtype, data=_res.data)
-        print("__add__. type res == ", type(res))
         return res
 
     def __iadd__(self, other):
@@ -199,36 +187,23 @@ class myclArray(clarray.Array):
         else:
             _res = clarray.Array.__iadd__(self, other)
         res = _res
-        print("__iadd__. type res == ", type(res))
-        print("__iadd__. res.strides == ", res.strides)
-        print("__iadd__. res.shape == ", res.shape)
         return res
 
     def __mul__(self, other):
         if isinstance(other, myclArray):
-            print("__mul__ Shapes is", self.shape, other.shape)
             if self.size==1 and other.size>2:
                 self, other = other, self
             if other.size == 1:
                 program = programs.singlesms(self.dtype, 'singlesms')
                 _res = empty(self.shape, self.dtype)
-                try:
-                    program.misinglemul(queue, (_res.size,), None, self.data, _res.data, other.data)
-                except:
-                    print("self is", self)
-                    print("other is", other)
+                program.misinglemul(queue, (_res.size,), None, self.data, _res.data, other.data)
             else:
-                print("__mul__ strides is", self.strides)
-                print("__mul__ arrays is", self)
-                print(other)
                 _res = clarray.Array.__mul__(self, other.reshape(self.shape))
             #assert False==True, "Unimlimented mul"
         else:
             _res = clarray.Array.__mul__(self, other)
         res = _res#myclArray(queue, self.shape, _res.dtype, data=_res.data)
         res.__class__ = myclArray
-        print("__mul__. type res == ", type(res))
-        print("__mul__. res == ", res)
         return res
 
     def sum(*args, **kwargs):
@@ -245,31 +220,25 @@ run = cl.Program(ctx, clsrc.signsrc+clsrc.isinfsrc).build()
 
 class myrandom():
     def __init__(self):
-        print("Init random")
         #np.random.__init__(self)
         self.randomeer = clrandom.RanluxGenerator(queue)
     def random(self, size):
-        print("call random")
         _res = clrandom.rand(queue, size, np.float32, a=0.0, b=1.0)
         _res.__class__ = myclArray
         return _res#myclArray(queue, _res.shape, _res.dtype, data=_res.data)
     def uniform(self, low=0.0, high=1.0, size=1):
-        print("call uniform")
         _res = self.randomeer.uniform(queue, size, np.float32, a=low, b=high)
         _res.__class__ = myclArray
         return _res#myclArray(queue, _res.shape, _res.dtype, data=_res.data)
     def randint(self, low, high=1.0, size=1):
-        print("call randint")
         _res = clrandom.rand(queue, size, np.int32, a=low, b=high)
         _res.__class__ = myclArray
         return _res#myclArray(queue, _res.shape, _res.dtype, data=_res.data)
     def rand(self, *args):
-        print("args==",args)
         _res = clrandom.rand(queue, args, np.float32, a=0.0, b=1.0)
         _res.__class__ = myclArray
         return _res#myclArray(queue, _res.shape, _res.dtype, data=_res.data)
     def randn(self, *args):
-        print("args==",args)
         _res = clrandom.rand(queue, args, np.float32, a=-1.0, b=1.0)
         _res.__class__ = myclArray
         return _res#myclArray(queue, _res.shape, _res.dtype, data=_res.data)
@@ -277,8 +246,6 @@ class myrandom():
         
 def arr_from_np(nparr):
     if nparr.dtype == np.object:
-        print("arr_from_np", type(nparr[0]))
-        print("arr_from_np", nparr)
         nparr = np.concatenate(nparr)
     buf = cl.Buffer(ctx, mf.READ_WRITE| mf.COPY_HOST_PTR, hostbuf=nparr)
     return myclArray(queue, nparr.shape, nparr.dtype, data=buf)
@@ -286,7 +253,6 @@ def arr_from_np(nparr):
 random = myrandom()
 
 def argmin(*args, **kwargs):
-    print("np.argmin called")
     return arr_from_np(np.argmin(*args, **kwargs))
 
 
@@ -297,16 +263,10 @@ def concatenate(arrays, axis=0):
     return res
 
 def dot(a, b, out=None):
-    print("dot args==")
-    print(a)
-    print(b)
     #TODO: work with out
     _res = clarray.dot(a, b)#np.dot(*args, **kwargs)
     _res.__class__ = myclArray
     res = _res#myclArray(queue, _res.shape, _res.dtype, data=_res.data)
-    print("dot type ==", type(res))
-    print("dot res ==")
-    print(res)
     return res
     
 
@@ -339,8 +299,6 @@ def ones_like(a, dtype=np.float32, order='K', subok=True):
 
 
 def row_stack(*args, **kwargs):
-    print("np.row_stack called on")
-    print(*args)
     return arr_from_np(np.row_stack(*args, **kwargs))
 
 
@@ -374,7 +332,6 @@ def exp(a, out=None):
 
 def linspace(start, stop, num=50, endpoint=True, retstep=False, dtype=np.float32):
     #TODO: create native function
-    print("np.linspace called")
     if num<2: return array([start])
     if endpoint:
         mnum = num-1
@@ -394,7 +351,6 @@ def min(a):
 
 def sqrt(a, out=None):
     #TODO: work with out
-    print(type(a))
     _res = clmath.sqrt(a, queue=queue) #np.sqrt(*args, **kwargs)
     _res.__class__ = myclArray
     res = _res#myclArray(queue, _res.shape, _res.dtype, data=_res.data)
@@ -419,7 +375,6 @@ def isinf(a, out=None):
 
 
 def items(*args, **kwargs):
-    print("np.items called")
     return np.items(*args, **kwargs)
 
 def max(a):
@@ -430,7 +385,6 @@ def abs(*args, **kwargs):
     if isinstance(arr, myclArray):
         return arr.__abs__()
     else:
-        print("np.abs called")
         return arr_from_np(np.abs(*args, **kwargs))
 
 def empty(shape, dtype=np.float32):
@@ -439,7 +393,6 @@ def empty(shape, dtype=np.float32):
 
 
 def argmax(*args, **kwargs):
-    print("np.argmax called")
     return arr_from_np(np.argmax(*args, **kwargs))
 
 
@@ -487,7 +440,6 @@ def sum(a, axis=None, dtype=None, out=None):
         result = empty(tuple(olddims[replaces[:-1]]), a.dtype)
         program.misum(queue, (a.size//a.shape[axis],), None, cltrresult, result.data)
         result.__class__ = myclArray
-        #print("type(value) == ", type(value))
         return result
     else:
         _res = clarray.sum(a, queue=queue) #np.sum(*args, **kwargs)

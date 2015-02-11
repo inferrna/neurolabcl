@@ -46,6 +46,10 @@ class myclArray(clarray.Array):
         result = clarray.Array.__gt__(self, other)
         result.is_boolean = True
         return result
+    #def __del__(self):
+    #    print("release")
+    #    self.data.release()
+        
 
     def reshape(self, *shape, **kwargs):
         _res = clarray.Array.reshape(self, *shape, **kwargs)
@@ -196,7 +200,11 @@ class myclArray(clarray.Array):
             if other.size == 1:
                 program = programs.singlesms(self.dtype, 'singlesms')
                 _res = empty(self.shape, self.dtype)
-                program.misinglemul(queue, (_res.size,), None, self.data, _res.data, other.data)
+                #try:
+                program.misinglemul(queue, (_res.size,), None, self.base_data, _res.data, other.base_data)
+                #except:
+                #    print("types is", type(_res), type(other))
+                #    exit()
             else:
                 _res = clarray.Array.__mul__(self, other.reshape(self.shape))
             #assert False==True, "Unimlimented mul"

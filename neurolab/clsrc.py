@@ -2,8 +2,25 @@ slicedefs = """
 #define dtype {0}
 #define PC {1} //Dimensions count
 """
+norecslicesrc = """
+uint slice{0}(uint id, __global int4 *params, const uint c)<%
+    int N = params[{3}].s0;
+    int x = params[{3}].s1;
+    int y = params[{3}].s2;
+    int d = abs(params[{3}].s3);
+    int minny = min(N, y);
+    int sd = params[{3}].s3/d; //Sign
+    int ipg = 1+(minny-(x%N)-1)/d;
+    int group = id/ipg;
+    {1}group = slice{2}(group, params, c-1);
+    int groupstart = group*N;
+    int cmd = id%ipg;
+    int groupid = x+(minny-1-x)*((1-sd)/2)+sd*cmd*d;
+    return  groupid+groupstart;
+%>
+"""
 slicesrc = """
-uint slice(uint id, __global int4 *params, uint c){
+uint slice(uint id, __global int4 *params, const uint c){
     int N = params[c].s0;
     int x = params[c].s1;
     int y = params[c].s2;
@@ -15,7 +32,6 @@ uint slice(uint id, __global int4 *params, uint c){
     if(c>0) group = slice(group, params, c-1);
     int groupstart = group*N;
     int cmd = id%ipg;
-    printf("cmd == %d\\n", cmd);
     int groupid = x+(minny-1-x)*((1-sd)/2)+sd*cmd*d;
     return  groupid+groupstart;
 }
@@ -64,7 +80,16 @@ __kernel void isneginf(__global float *inpt, __global uint *outpt){
 }\n
 """
 
-transpsrc = """
+findposnorecsrc = """
+void findpos{0}(uint id, __global uint *olddims, uint *currposs, uint c)<%
+    uint ipg = olddims[{3}];
+    uint group = id/ipg;
+    uint gid = id%ipg;
+    currposs[{3}] = gid;
+    {1}findpos{2}(group, olddims, currposs, c-1);
+%>
+"""
+findpossrc = """
 void findpos(uint id, __global uint *olddims, uint *currposs, uint c){
     uint ipg = olddims[c];
     uint group = id/ipg;
@@ -72,6 +97,9 @@ void findpos(uint id, __global uint *olddims, uint *currposs, uint c){
     currposs[c] = gid;
     if(c>0) findpos(group, olddims, currposs, c-1);
 }
+"""
+
+transpsrc = """
 
 __kernel void mitransp(__global uint *olddims, __global uint *replaces,
                        __global dtype *data, __global dtype *result){

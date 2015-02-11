@@ -24,21 +24,41 @@ class programs():
     def sliceset(self, *args):
         if not args in programcache.keys():
             dtype, ndim, oper = args
-            ksource = clsrc.slicedefs.format(typemaps[dtype.name], ndim) + clsrc.slicesrc + clsrc.slicesetsrc
+            nds = ndim-1
+            slicesrcl = [clsrc.norecslicesrc.format("", "", min(1, nds), nds)]+\
+                        [clsrc.norecslicesrc.format(a, "", a+1, nds-a) for a in range(1, nds)]+\
+                        [clsrc.norecslicesrc.format(nds, "//", 0, 0)]
+            slicesrcl.reverse()
+            slicesrc = "\n".join(slicesrcl).replace("<%", "{").replace("%>", "}")+"\n"
+            ksource = clsrc.slicedefs.format(typemaps[dtype.name], ndim) + slicesrc + clsrc.slicesetsrc
             programcache[args] = cl.Program(self.ctx, ksource).build()
         return programcache[args]
 
     def sliceget(self, *args):
         if not args in programcache.keys():
             dtype, ndim, oper = args
-            ksource = clsrc.slicedefs.format(typemaps[dtype.name], ndim) + clsrc.slicesrc + clsrc.slicegetsrc
+            nds = ndim-1
+            slicesrcl = [clsrc.norecslicesrc.format("", "", min(1, nds), nds)]+\
+                        [clsrc.norecslicesrc.format(a, "", a+1, nds-a) for a in range(1, nds)]+\
+                        [clsrc.norecslicesrc.format(nds, "//", 0, 0)]
+            slicesrcl.reverse()
+            slicesrc = "\n".join(slicesrcl).replace("<%", "{").replace("%>", "}")+"\n"
+            ksource = clsrc.slicedefs.format(typemaps[dtype.name], ndim) + slicesrc + clsrc.slicegetsrc
+            print(ksource)
             programcache[args] = cl.Program(self.ctx, ksource).build()
         return programcache[args]
 
     def transpose(self, *args):
         if not args in programcache.keys():
             dtype, ndim, oper = args
-            ksource = clsrc.slicedefs.format(typemaps[dtype.name], ndim) + clsrc.transpsrc
+            nds = ndim-1
+            findpsrcl = [clsrc.findposnorecsrc.format("", "", min(1, nds), nds)]+\
+                        [clsrc.findposnorecsrc.format(a, "", a+1, nds-a) for a in range(1, nds)]+\
+                        [clsrc.findposnorecsrc.format(nds, "//", 0, 0)]
+            findpsrcl.reverse()
+            findpsrc = "\n".join(findpsrcl).replace("<%", "{").replace("%>", "}")+"\n"
+            ksource = clsrc.slicedefs.format(typemaps[dtype.name], ndim) + findpsrc + clsrc.transpsrc
+            print(ksource)
             programcache[args] = cl.Program(self.ctx, ksource).build()
         return programcache[args]
 

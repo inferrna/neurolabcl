@@ -129,6 +129,26 @@ __kernel void mitransp(__global uint *olddims, __global uint *replaces,
     result[newid] = data[gid];
 }
 """
+minsrc = """
+__kernel void misum(__global dtype *data, __global dtype *result){
+    uint gid = get_global_id(0);
+    dtype res = data[gid*PC];
+    for(uint i = gid*PC+1; i<gid*PC+PC; i++){
+        res = min(data[i], res);
+    }
+    result[gid] = res;
+}
+"""
+maxsrc = """
+__kernel void misum(__global dtype *data, __global dtype *result){
+    uint gid = get_global_id(0);
+    dtype res = data[gid*PC];
+    for(uint i = gid*PC+1; i<gid*PC+PC; i++){
+        res = max(data[i], res);
+    }
+    result[gid] = res;
+}
+"""
 sumsrc = """
 __kernel void misum(__global dtype *data, __global dtype *result){
     uint gid = get_global_id(0);

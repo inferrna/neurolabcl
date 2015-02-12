@@ -20,7 +20,7 @@ class myBuffer(cl._cl.Buffer):
     def __del__(self):
         self.nowners -= 1
         if self.nowners == 0:
-            print("released", self.base_data.size, "bytes directly")
+            print("released", self.size, "bytes directly")
             self.release()
 
 class myclArray(clarray.Array):
@@ -112,7 +112,7 @@ class myclArray(clarray.Array):
             _res = x[:y.get()]
         elif isinstance(index, tuple) or isinstance(index, slice):
             indices, newshape = self.createshapes(index)
-            program = programs.sliceget(self.dtype, len(self.shape), 'sliceget')
+            program = programs.sliceget(self.dtype, len(self.shape))
             _res = empty(newshape, self.dtype)
             program.mislice(queue, (_res.size,), None, indices.data, self.data, _res.data)
             return _res
@@ -129,7 +129,7 @@ class myclArray(clarray.Array):
         result = empty(tuple(olddims[replaces]), self.dtype)
         clolddims = myBuffer(ctx, mf.READ_ONLY| mf.COPY_HOST_PTR, hostbuf=olddims)
         clreplaces = myBuffer(ctx, mf.READ_ONLY| mf.COPY_HOST_PTR, hostbuf=replaces)
-        program = programs.transpose(self.dtype, self.ndim, 'transpose')
+        program = programs.transpose(self.dtype, self.ndim)
         program.mitransp(queue, (self.size,), None, clolddims, clreplaces, self.data, result.data)
         clreplaces.release()
         clolddims.release()
@@ -154,7 +154,7 @@ class myclArray(clarray.Array):
             #reself = self.reshape((self.size,))
         elif isinstance(subscript, tuple) or isinstance(subscript, slice):
             indices, newshape = self.createshapes(subscript)
-            program = programs.sliceset(self.dtype, len(self.shape), 'sliceset')
+            program = programs.sliceset(self.dtype, len(self.shape))
             result = empty(newshape, self.dtype)
             assert value.size == result.size or value.size == 1, "Size of value array {0} does not match size of result indices {1}"\
                                                                  .format(value.size, result.size)
@@ -172,12 +172,12 @@ class myclArray(clarray.Array):
         if isinstance(other, myclArray) and not self.shape == other.shape:
             if self.size == 1 and other.size>2:
                 result = empty(other.shape, self.dtype)
-                program = programs.singlesms(self.dtype, 'singlesms')
+                program = programs.singlesms(self.dtype)
                 program.misinglenegsub(queue, (self.size,), None, other.data, result.data, self.data)
                 _res = result
             if other.size==1:
                 result = empty(self.shape, self.dtype)
-                program = programs.singlesms(self.dtype, 'singlesms')
+                program = programs.singlesms(self.dtype)
                 program.misinglesub(queue, (self.size,), None, self.data, result.data, other.data)
                 _res = result
             elif self.size == other.size:
@@ -196,7 +196,7 @@ class myclArray(clarray.Array):
                 self, other = other, self
             if other.size==1:
                 result = empty(self.shape, self.dtype)
-                program = programs.singlesms(self.dtype, 'singlesms')
+                program = programs.singlesms(self.dtype)
                 program.misinglesum(queue, (self.size,), None, self.data, result.data, other.data)
                 _res = result
             elif self.size == other.size:
@@ -214,7 +214,7 @@ class myclArray(clarray.Array):
             if self.size<2 and other.size>2:
                 self, other = other, self
             if other.size == 1:
-                program = programs.singlesms(self.dtype, 'singlesms')
+                program = programs.singlesms(self.dtype)
                 program.misinglesum(queue, (self.size,), None, self.data, self.data, other.data)
                 _res = self
             elif self.size == other.size:
@@ -233,7 +233,7 @@ class myclArray(clarray.Array):
             if self.size==1 and other.size>2:
                 self, other = other, self
             if other.size == 1:
-                program = programs.singlesms(self.dtype, 'singlesms')
+                program = programs.singlesms(self.dtype)
                 _res = empty(self.shape, self.dtype)
                 #try:
                 program.misinglemul(queue, (_res.size,), None, self.base_data, _res.data, other.base_data)
@@ -251,9 +251,41 @@ class myclArray(clarray.Array):
         res = _res#myclArray(queue, self.shape, _res.dtype, data=_res.data)
         return res
 
-    def sum(*args, **kwargs):
+    def max(*args, **kwargs):
+        a = args[0]
+        if a.ndim==0 or not 'axis' in kwargs.keys():
+            _res = clarray.max(a, queue=queue) #np.sum(*args, **kwargs)
+            if not isinstance(_res, myclArray):
+                _res.__class__ = myclArray
+                _res.reinit()
+            return _res
+        else:
+            kwargs['prg2load'] = programs.max
+            return sum(*args, **kwargs)
 
-        return sum(*args, **kwargs)
+    def min(*args, **kwargs):
+        a = args[0]
+        if a.ndim==0 or not 'axis' in kwargs.keys():
+            _res = clarray.min(a, queue=queue) #np.sum(*args, **kwargs)
+            if not isinstance(_res, myclArray):
+                _res.__class__ = myclArray
+                _res.reinit()
+            return _res
+        else:
+            kwargs['prg2load'] = programs.min
+            return sum(*args, **kwargs)
+
+    def sum(*args, **kwargs):
+        a = args[0]
+        if a.ndim==0 or not 'axis' in kwargs.keys():
+            _res = clarray.sum(a, queue=queue) #np.sum(*args, **kwargs)
+            if not isinstance(_res, myclArray):
+                _res.__class__ = myclArray
+                _res.reinit()
+            return _res
+        else:
+            kwargs['prg2load'] = programs.sum
+            return sum(*args, **kwargs)
 
     def flatten(self):
         return self.ravel()
@@ -461,7 +493,7 @@ def square(a, out=None):
 def sign(a, out=None):
     if out:
         run.asign(queue, (a.size,), None, a.data, out.data)
-        return out
+        return out1111111111111
     else:
         res = empty(a.shape, dtype=a.dtype)
         if not isinstance(res, myclArray):
@@ -479,34 +511,24 @@ def zeros_like(a, dtype=None, order='K', subok=True):
     return res
 
 
-def sum(a, axis=None, dtype=None, out=None):
-    #TODO: work with axis, out, keepdims
-    if not axis==None and a.ndim>1:
-        #Transpose first to shift target axis to the end
-        #do not transpose if axis already is the end
-        olddims = np.array(a.shape, dtype=np.uint32)
-        replaces = np.append(np.delete(np.arange(a.ndim), axis, 0), [axis], 0).astype(np.uint32)
-        if axis != a.ndim-1:
-            clolddims = myBuffer(ctx, mf.READ_ONLY| mf.COPY_HOST_PTR, hostbuf=olddims)
-            clreplaces = myBuffer(ctx, mf.READ_ONLY| mf.COPY_HOST_PTR, hostbuf=replaces)
-            cltrresult = myBuffer(ctx, mf.READ_WRITE, a.nbytes)
-            program = programs.transpose(a.dtype, a.ndim, 'transpose')
-            program.mitransp(queue, (a.size,), None, clolddims, clreplaces, a.data, cltrresult)
-        else:
-            cltrresult = a.data
-
-        program = programs.sum(a.dtype, a.shape[axis], 'sum')
-        #Sum for last axis
-        result = empty(tuple(olddims[replaces[:-1]]), a.dtype)
-        program.misum(queue, (a.size//a.shape[axis],), None, cltrresult, result.data)
-        return result
+def sum(a, axis=None, dtype=None, out=None, prg2load=programs.sum):
+    #Transpose first to shift target axis to the end
+    #do not transpose if axis already is the end
+    olddims = np.array(a.shape, dtype=np.uint32)
+    replaces = np.append(np.delete(np.arange(a.ndim), axis, 0), [axis], 0).astype(np.uint32)
+    if axis != a.ndim-1:
+        clolddims = myBuffer(ctx, mf.READ_ONLY| mf.COPY_HOST_PTR, hostbuf=olddims)
+        clreplaces = myBuffer(ctx, mf.READ_ONLY| mf.COPY_HOST_PTR, hostbuf=replaces)
+        cltrresult = myBuffer(ctx, mf.READ_WRITE, a.nbytes)
+        program = programs.transpose(a.dtype, a.ndim)
+        program.mitransp(queue, (a.size,), None, clolddims, clreplaces, a.data, cltrresult)
     else:
-        _res = clarray.sum(a, queue=queue) #np.sum(*args, **kwargs)
-        if not isinstance(_res, myclArray):
-            _res.__class__ = myclArray
-            _res.reinit()
-        res = _res#myclArray(queue, _res.shape, _res.dtype, data=_res.data)
-        return res
+        cltrresult = a.data
+    program = prg2load(a.dtype, a.shape[axis])
+    #Sum for last axis
+    result = empty(tuple(olddims[replaces[:-1]]), a.dtype)
+    program.misum(queue, (a.size//a.shape[axis],), None, cltrresult, result.data)
+    return result
 
 def sin(arr):
     #TODO: work with axis, out, keepdims

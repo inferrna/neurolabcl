@@ -22,8 +22,9 @@ class programs():
         self.ctx = context
 
     def sliceset(self, *args):
-        if not args in programcache.keys():
-            dtype, ndim, oper = args
+        key = args+('sliceset',)
+        if not key in programcache.keys():
+            dtype, ndim = args
             nds = ndim-1
             slicesrcl = [clsrc.norecslicesrc.format("", "", min(1, nds), nds)]+\
                         [clsrc.norecslicesrc.format(a, "", a+1, nds-a) for a in range(1, nds)]+\
@@ -31,12 +32,13 @@ class programs():
             slicesrcl.reverse()
             slicesrc = "\n".join(slicesrcl).replace("<%", "{").replace("%>", "}")+"\n"
             ksource = clsrc.slicedefs.format(typemaps[dtype.name], ndim) + slicesrc + clsrc.slicesetsrc
-            programcache[args] = cl.Program(self.ctx, ksource).build()
-        return programcache[args]
+            programcache[key] = cl.Program(self.ctx, ksource).build()
+        return programcache[key]
 
     def sliceget(self, *args):
-        if not args in programcache.keys():
-            dtype, ndim, oper = args
+        key = args+('sliceget',)
+        if not key in programcache.keys():
+            dtype, ndim = args
             nds = ndim-1
             slicesrcl = [clsrc.norecslicesrc.format("", "", min(1, nds), nds)]+\
                         [clsrc.norecslicesrc.format(a, "", a+1, nds-a) for a in range(1, nds)]+\
@@ -44,12 +46,13 @@ class programs():
             slicesrcl.reverse()
             slicesrc = "\n".join(slicesrcl).replace("<%", "{").replace("%>", "}")+"\n"
             ksource = clsrc.slicedefs.format(typemaps[dtype.name], ndim) + slicesrc + clsrc.slicegetsrc
-            programcache[args] = cl.Program(self.ctx, ksource).build()
-        return programcache[args]
+            programcache[key] = cl.Program(self.ctx, ksource).build()
+        return programcache[key]
 
     def transpose(self, *args):
-        if not args in programcache.keys():
-            dtype, ndim, oper = args
+        key = args+('transpose',)
+        if not key in programcache.keys():
+            dtype, ndim = args
             nds = ndim-1
             findpsrcl = [clsrc.findposnorecsrc.format("", "", min(1, nds), nds)]+\
                         [clsrc.findposnorecsrc.format(a, "", a+1, nds-a) for a in range(1, nds)]+\
@@ -57,23 +60,40 @@ class programs():
             findpsrcl.reverse()
             findpsrc = "\n".join(findpsrcl).replace("<%", "{").replace("%>", "}")+"\n"
             ksource = clsrc.slicedefs.format(typemaps[dtype.name], ndim) + findpsrc + clsrc.transpsrc
-            programcache[args] = cl.Program(self.ctx, ksource).build()
-        return programcache[args]
+            programcache[key] = cl.Program(self.ctx, ksource).build()
+        return programcache[key]
 
     def sum(self, *args):
-        if not args in programcache.keys():
-            dtype, nsum, oper = args
+        key = args+('sum',)
+        if not key in programcache.keys():
+            dtype, nsum = args
             ksource = clsrc.slicedefs.format(typemaps[dtype.name], nsum) + clsrc.sumsrc
-            programcache[args] = cl.Program(self.ctx, ksource).build()
-        return programcache[args]
+            print(ksource)
+            programcache[key] = cl.Program(self.ctx, ksource).build()
+        return programcache[key]
+    def min(self, *args):
+        key = args+('min',)
+        if not key in programcache.keys():
+            dtype, nsum = args
+            ksource = clsrc.slicedefs.format(typemaps[dtype.name], nsum) + clsrc.minsrc
+            programcache[key] = cl.Program(self.ctx, ksource).build()
+        return programcache[key]
+    def max(self, *args):
+        key = args+('max',)
+        if not key in programcache.keys():
+            dtype, nsum  = args
+            ksource = clsrc.slicedefs.format(typemaps[dtype.name], nsum) + clsrc.maxsrc
+            programcache[key] = cl.Program(self.ctx, ksource).build()
+        return programcache[key]
 
     def singlesms(self, *args):
-        if not args in programcache.keys():
-            dtype, oper = args
+        key = args+('singlesms',)
+        if not key in programcache.keys():
+            dtype = args[0]
             ksource = clsrc.slicedefs.format(typemaps[dtype.name], 0) +\
                                                    clsrc.singlesumsrc +\
                                                    clsrc.singlemulsrc +\
                                                    clsrc.singlesubsrc +\
                                                    clsrc.singlenegsubsrc
-            programcache[args] = cl.Program(self.ctx, ksource).build()
-        return programcache[args]
+            programcache[key] = cl.Program(self.ctx, ksource).build()
+        return programcache[key]

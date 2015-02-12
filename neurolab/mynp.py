@@ -13,14 +13,27 @@ programs = clprograms.programs(ctx)
 Inf = np.Inf
 mf = cl.mem_flags
 
+class myBuffer(cl._cl.Buffer):
+    def __init__(self, *args, **kwargs):
+        cl._cl.Buffer.__init__(self, *args, **kwargs)
+        self.nowners = 0
+
 class myclArray(clarray.Array):
     def __init__(self, *args, **kwargs):
         clarray.Array.__init__(self, *args, **kwargs)
+        self.reinit()
+
+    def reinit(self):
         self.ndim = len(self.shape)
 #TODO rewrite inner operators to support boolean array as parameter
 #https://docs.python.org/3/library/operator.html
         self.is_boolean = False
         self.ismine = 1
+        if not isinstance(self.base_data, myBuffer):
+            self.base_data.__class__ = myBuffer
+            self.base_data.nowners = 1
+        else:
+            self.base_data.nowners += 1
 
     def __lt__(self, other):
         result = clarray.Array.__lt__(self, other)
@@ -46,14 +59,20 @@ class myclArray(clarray.Array):
         result = clarray.Array.__gt__(self, other)
         result.is_boolean = True
         return result
-    #def __del__(self):
-    #    print("release")
-    #    self.data.release()
+    def __del__(self):
+        self.base_data.nowners -=1
+        if self.base_data.nowners == 0:
+            print("released", self.base_data.size, "bytes")
+            self.base_data.release()
         
 
     def reshape(self, *shape, **kwargs):
         _res = clarray.Array.reshape(self, *shape, **kwargs)
+        if not isinstance(_res, myclArray):
+            _res.__class__ = myclArray
+            _res.reinit()
         _res.__class__ = myclArray
+        _res.reinit()
         res = _res#myclArray(queue, _res.shape, _res.dtype, data=_res.data)
         return res
 
@@ -94,7 +113,9 @@ class myclArray(clarray.Array):
             return _res
         else: 
             _res = clarray.Array.__getitem__(self, index)
-        _res.__class__ = myclArray
+        if not isinstance(_res, myclArray):
+            _res.__class__ = myclArray
+            _res.reinit()
         return _res
 
     def transpose(self, *args):
@@ -105,6 +126,8 @@ class myclArray(clarray.Array):
         clreplaces = cl.Buffer(ctx, mf.READ_ONLY| mf.COPY_HOST_PTR, hostbuf=replaces)
         program = programs.transpose(self.dtype, self.ndim, 'transpose')
         program.mitransp(queue, (self.size,), None, clolddims, clreplaces, self.data, result.data)
+        clreplaces.release()
+        clolddims.release()
         return result
 
 
@@ -156,7 +179,9 @@ class myclArray(clarray.Array):
                 _res = clarray.Array.__sub__(self, other)
         else:
             _res = clarray.Array.__sub__(self, other)
-        _res.__class__ = myclArray
+        if not isinstance(_res, myclArray):
+            _res.__class__ = myclArray
+            _res.reinit()
         res = _res#myclArray(queue, self.shape, _res.dtype, data=_res.data)
         return res
 
@@ -173,7 +198,9 @@ class myclArray(clarray.Array):
                 _res = clarray.Array.__add__(self, other)
         else:
             _res = clarray.Array.__add__(self, other)
-        _res.__class__ = myclArray
+        if not isinstance(_res, myclArray):
+            _res.__class__ = myclArray
+            _res.reinit()
         res = _res#myclArray(queue, self.shape, _res.dtype, data=_res.data)
         return res
 
@@ -190,6 +217,9 @@ class myclArray(clarray.Array):
             #    assert False==True, "Unimlimented mul. shapes is {0} and {1}".format(self.shape, other.shape)
         else:
             _res = clarray.Array.__iadd__(self, other)
+        if not isinstance(_res, myclArray):
+            _res.__class__ = myclArray
+            _res.reinit()
         res = _res
         return res
 
@@ -210,8 +240,10 @@ class myclArray(clarray.Array):
             #assert False==True, "Unimlimented mul"
         else:
             _res = clarray.Array.__mul__(self, other)
+        if not isinstance(_res, myclArray):
+            _res.__class__ = myclArray
+            _res.reinit()
         res = _res#myclArray(queue, self.shape, _res.dtype, data=_res.data)
-        res.__class__ = myclArray
         return res
 
     def sum(*args, **kwargs):
@@ -233,22 +265,27 @@ class myrandom():
     def random(self, size):
         _res = clrandom.rand(queue, size, np.float32, a=0.0, b=1.0)
         _res.__class__ = myclArray
+        res.reinit()
         return _res#myclArray(queue, _res.shape, _res.dtype, data=_res.data)
     def uniform(self, low=0.0, high=1.0, size=1):
         _res = self.randomeer.uniform(queue, size, np.float32, a=low, b=high)
         _res.__class__ = myclArray
+        _res.reinit()
         return _res#myclArray(queue, _res.shape, _res.dtype, data=_res.data)
     def randint(self, low, high=1.0, size=1):
         _res = clrandom.rand(queue, size, np.int32, a=low, b=high)
         _res.__class__ = myclArray
+        _res.reinit()
         return _res#myclArray(queue, _res.shape, _res.dtype, data=_res.data)
     def rand(self, *args):
         _res = clrandom.rand(queue, args, np.float32, a=0.0, b=1.0)
         _res.__class__ = myclArray
+        _res.reinit()
         return _res#myclArray(queue, _res.shape, _res.dtype, data=_res.data)
     def randn(self, *args):
         _res = clrandom.rand(queue, args, np.float32, a=-1.0, b=1.0)
         _res.__class__ = myclArray
+        _res.reinit()
         return _res#myclArray(queue, _res.shape, _res.dtype, data=_res.data)
 
         
@@ -268,6 +305,7 @@ def concatenate(arrays, axis=0):
     _res = clarray.concatenate(arrays, axis, queue)#np.concatenate(*args, **kwargs)
     _res.__class__ = myclArray
     res = _res#myclArray(queue, _res.shape, _res.dtype, data=_res.data)
+    res.reinit()
     return res
 
 def dot(a, b, out=None):
@@ -275,6 +313,7 @@ def dot(a, b, out=None):
     _res = clarray.dot(a, b)#np.dot(*args, **kwargs)
     _res.__class__ = myclArray
     res = _res#myclArray(queue, _res.shape, _res.dtype, data=_res.data)
+    res.reinit()
     return res
     
 
@@ -283,6 +322,7 @@ def floor(a, out=None):
     _res = clmath.floor(a, queue=queue) #np.floor(*args, **kwargs)
     _res.__class__ = myclArray
     res = _res#myclArray(queue, _res.shape, _res.dtype, data=_res.data)
+    res.reinit()
     return res
 
 
@@ -315,6 +355,7 @@ def tanh(a, out=None):
     _res = clmath.tanh(a, queue=queue) #np.tanh(*args, **kwargs)
     _res.__class__ = myclArray
     res = _res#myclArray(queue, _res.shape, _res.dtype, data=_res.data)
+    res.reinit()
     return res
 
 
@@ -335,6 +376,7 @@ def exp(a, out=None):
     _res = clmath.exp(a, queue=queue) #np.exp(*args, **kwargs)
     _res.__class__ = myclArray
     res = _res#myclArray(queue, _res.shape, _res.dtype, data=_res.data)
+    res.reinit()
     return res
 
 
@@ -350,6 +392,7 @@ def linspace(start, stop, num=50, endpoint=True, retstep=False, dtype=np.float32
         stop = stop + diff
     res = clarray.arange(queue, start, stop, diff, dtype=np.float32)[:num]
     res.__class__ = myclArray
+    res.reinit()
     return res
 
 
@@ -362,6 +405,7 @@ def sqrt(a, out=None):
     _res = clmath.sqrt(a, queue=queue) #np.sqrt(*args, **kwargs)
     _res.__class__ = myclArray
     res = _res#myclArray(queue, _res.shape, _res.dtype, data=_res.data)
+    res.reinit()
     return res
 
 
@@ -415,7 +459,9 @@ def sign(a, out=None):
         return out
     else:
         res = empty(a.shape, dtype=a.dtype)
-        res.__class__ = myclArray
+        if not isinstance(res, myclArray):
+            res.__class__ = myclArray
+            res.reinit()
         run.asign(queue, (a.size,), None, a.data, res.data)
         return res
 
@@ -424,6 +470,7 @@ def zeros_like(a, dtype=None, order='K', subok=True):
     _res = clarray.zeros_like(a)
     _res.__class__ = myclArray
     res = _res#myclArray(queue, _res.shape, _res.dtype, data=_res.data)
+    res.reinit()
     return res
 
 
@@ -447,14 +494,13 @@ def sum(a, axis=None, dtype=None, out=None):
         #Sum for last axis
         result = empty(tuple(olddims[replaces[:-1]]), a.dtype)
         program.misum(queue, (a.size//a.shape[axis],), None, cltrresult, result.data)
-        result.__class__ = myclArray
         return result
     else:
         _res = clarray.sum(a, queue=queue) #np.sum(*args, **kwargs)
-        _res.__class__ = myclArray
+        if not isinstance(_res, myclArray):
+            _res.__class__ = myclArray
+            _res.reinit()
         res = _res#myclArray(queue, _res.shape, _res.dtype, data=_res.data)
-        #if res.size==1: return res.get()
-        #else: 
         return res
 
 def sin(arr):
@@ -462,12 +508,14 @@ def sin(arr):
     _res = clmath.sin(arr, queue=queue) #np.sum(*args, **kwargs)
     _res.__class__ = myclArray
     res = _res#myclArray(queue, _res.shape, _res.dtype, data=_res.data)
+    res.reinit()
     return res
 
 
 def zeros(shape, dtype=np.float32, order='C'):
     res = clarray.zeros(queue, shape, dtype, order)
     res.__class__ = myclArray
+    res.reinit()
     return res
 
 def array(*args, **kwargs):

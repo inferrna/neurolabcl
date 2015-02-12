@@ -17,6 +17,11 @@ class myBuffer(cl._cl.Buffer):
     def __init__(self, *args, **kwargs):
         cl._cl.Buffer.__init__(self, *args, **kwargs)
         self.nowners = 0
+    def __del__(self):
+        self.nowners -= 1
+        if self.nowners == 0:
+            print("released", self.base_data.size, "bytes directly")
+            self.release()
 
 class myclArray(clarray.Array):
     def __init__(self, *args, **kwargs):
@@ -122,8 +127,8 @@ class myclArray(clarray.Array):
         replaces = np.array(args, dtype=np.uint32)
         olddims = np.array(self.shape, dtype=np.uint32)
         result = empty(tuple(olddims[replaces]), self.dtype)
-        clolddims = cl.Buffer(ctx, mf.READ_ONLY| mf.COPY_HOST_PTR, hostbuf=olddims)
-        clreplaces = cl.Buffer(ctx, mf.READ_ONLY| mf.COPY_HOST_PTR, hostbuf=replaces)
+        clolddims = myBuffer(ctx, mf.READ_ONLY| mf.COPY_HOST_PTR, hostbuf=olddims)
+        clreplaces = myBuffer(ctx, mf.READ_ONLY| mf.COPY_HOST_PTR, hostbuf=replaces)
         program = programs.transpose(self.dtype, self.ndim, 'transpose')
         program.mitransp(queue, (self.size,), None, clolddims, clreplaces, self.data, result.data)
         clreplaces.release()
@@ -292,7 +297,7 @@ class myrandom():
 def arr_from_np(nparr):
     if nparr.dtype == np.object:
         nparr = np.concatenate(nparr)
-    buf = cl.Buffer(ctx, mf.READ_WRITE| mf.COPY_HOST_PTR, hostbuf=nparr)
+    buf = myBuffer(ctx, mf.READ_WRITE| mf.COPY_HOST_PTR, hostbuf=nparr)
     return myclArray(queue, nparr.shape, nparr.dtype, data=buf)
 
 random = myrandom()
@@ -482,9 +487,9 @@ def sum(a, axis=None, dtype=None, out=None):
         olddims = np.array(a.shape, dtype=np.uint32)
         replaces = np.append(np.delete(np.arange(a.ndim), axis, 0), [axis], 0).astype(np.uint32)
         if axis != a.ndim-1:
-            clolddims = cl.Buffer(ctx, mf.READ_ONLY| mf.COPY_HOST_PTR, hostbuf=olddims)
-            clreplaces = cl.Buffer(ctx, mf.READ_ONLY| mf.COPY_HOST_PTR, hostbuf=replaces)
-            cltrresult = cl.Buffer(ctx, mf.READ_WRITE, a.nbytes)
+            clolddims = myBuffer(ctx, mf.READ_ONLY| mf.COPY_HOST_PTR, hostbuf=olddims)
+            clreplaces = myBuffer(ctx, mf.READ_ONLY| mf.COPY_HOST_PTR, hostbuf=replaces)
+            cltrresult = myBuffer(ctx, mf.READ_WRITE, a.nbytes)
             program = programs.transpose(a.dtype, a.ndim, 'transpose')
             program.mitransp(queue, (a.size,), None, clolddims, clreplaces, a.data, cltrresult)
         else:

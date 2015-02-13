@@ -20,7 +20,7 @@ class myBuffer(cl._cl.Buffer):
     def __del__(self):
         self.nowners -= 1
         if self.nowners == 0:
-            print("released", self.size, "bytes directly")
+            #print("released", self.size, "bytes directly")
             self.release()
 
 class myclArray(clarray.Array):
@@ -67,7 +67,7 @@ class myclArray(clarray.Array):
     def __del__(self):
         self.base_data.nowners -=1
         if self.base_data.nowners == 0:
-            print("released", self.base_data.size, "bytes")
+            #print("released", self.base_data.size, "bytes")
             self.base_data.release()
         
 
@@ -514,6 +514,12 @@ def zeros_like(a, dtype=None, order='K', subok=True):
 def sum(a, axis=None, dtype=None, out=None, prg2load=programs.sum):
     #Transpose first to shift target axis to the end
     #do not transpose if axis already is the end
+    if axis==None:
+        res = clarray.sum(a, queue=queue)
+        if not isinstance(res, myclArray):
+            res.__class__ = myclArray
+            res.reinit()
+        return res
     olddims = np.array(a.shape, dtype=np.uint32)
     replaces = np.append(np.delete(np.arange(a.ndim), axis, 0), [axis], 0).astype(np.uint32)
     if axis != a.ndim-1:

@@ -68,7 +68,7 @@ class programs():
         if not key in programcache.keys():
             dtype, nsum = args
             ksource = clsrc.slicedefs.format(typemaps[dtype.name], nsum) + clsrc.sumsrc
-            print(ksource)
+            #print(ksource)
             programcache[key] = cl.Program(self.ctx, ksource).build()
         return programcache[key]
     def min(self, *args):

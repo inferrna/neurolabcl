@@ -2,15 +2,15 @@ import numpy as np
 import neurolab as nl
 import time
 
-harr = np.random.randint(99, size=(330, 500, 9,))
+harr = np.random.randint(99, size=(30, 55, 4,))
 carr = nl.mynp.arr_from_np(harr)
 farr = carr.reshape((carr.size,))
-hsa = harr[5::9,::21,::2]
-csa = carr[5::9,::21,::2]
+hsa = harr[5::9,::7,::2]
+csa = carr[5::9,::7,::2]
 t1 = time.time()
-hs = harr[5::7,::21,::2]
+hs = harr[5::7,::7,::2]
 t2 = time.time()
-cs = carr[5::7,::21,::2]
+cs = carr[5::7,::7,::2]
 t3 = time.time()
 #harr = np.random.randint(99, size=(3, 4, 5, 6,))
 #carr = nl.mynp.arr_from_np(harr)

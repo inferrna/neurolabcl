@@ -1,6 +1,6 @@
 import time
 from numpy import ndarray
-
+import numpy as np
 
 class justtime():
     def __init__(self, func):
@@ -17,29 +17,51 @@ class justtime():
         self.bage.append(self.bage[1]/self.bage[2])
         print("Function {0}. Total time {1}, total calls {2}. Average time {3}.".format(*self.bage))
 
-class chkmethod():
-    def __init__(self, *args):
-        func = args[0]
-        self.func = func
-        self.npfunc = ndarray.__dict__[func.__name__]
-        self.bage = [func.__name__, 0.0, 0, 0]
-    def __call__(self, *args, **kw):
-        print(self, args, kw)
-        ts = time.time()
-        result = self.func(obj, *args, **kw)
-        te = time.time()
-        newargs = [obj.get()] + args[1:]
-        npres = self.npfunc(*newargs, **kw)
-        clres = result.get()
-        if isinstance(npres, ndarray):
-            print(((abs(clres-npres))>0.00001).all())
+def convertinst(inst, varbls):
+    newvs = []
+    for varbl in varbls:
+        if isinstance(varbl, inst):
+            newvs.append(varbl.get())
         else:
-            print((abs(clres-npres))>0.00001)
-        self.bage[1] += te-ts
-        self.bage[2] += 1
+            newvs.append(varbl)
+    return tuple(newvs)
+
+def chkmethod(func):
+    npfunc = ndarray.__dict__[func.__name__]
+    def wrapper(*args, **kw):
+        #print("wrapper", args, kw)
+        result = func(*args, **kw)
+        newargs = convertinst(ndarray, args)
+        npres = npfunc(*newargs, **kw)
+        clres = result.get()
+        #print(npres)
+        #print(clres)
+        if isinstance(npres, ndarray):
+            tst = ((abs(clres-npres))<0.00001).all()
+        else:
+            tst = (abs(clres-npres))<0.00001
+        assert tst==True, "Result from cl \n{0}\n does not equal result from np\n{1}"\
+                          .format(clres, npres)
         return result
-    def __del__(self):
-        if self.bage[2]: 
-            self.bage[3] = self.bage[1]/self.bage[2]
-        print("Function myArray.{0}. Total time {1}, total calls {2}. Average time {3}.".format(*self.bage))
+    return wrapper
+
+def chkfunc(func):
+    npfunc = np.__dict__[func.__name__]
+    def wrapper(*args, **kw):
+        #print("wrapper", args, kw)
+        result = func(*args, **kw)
+        newargs = convertinst(ndarray, args)
+        npres = npfunc(*newargs, **kw)
+        clres = result.get()
+        #print(npres)
+        #print(clres)
+        if isinstance(npres, ndarray):
+            tst = ((abs(clres-npres))<0.00001).all()
+        else:
+            tst = (abs(clres-npres))<0.00001
+        assert tst==True, "Result from cl \n{0}\n does not equal result from np\n{1}"\
+                          .format(clres, npres)
+        return result
+    return wrapper
+
 

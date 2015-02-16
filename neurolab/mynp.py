@@ -5,7 +5,8 @@ from pyopencl import array as clarray
 from pyopencl import algorithm
 import clsrc
 import clprograms
-from checker import chkmethod
+from checker import chkmethod, justtime, chkfunc
+
 
 ctx = cl.create_some_context()
 queue = cl.CommandQueue(ctx)
@@ -117,7 +118,7 @@ class myclArray(clarray.Array):
             _res = empty(newshape, self.dtype)
             program.mislice(queue, (_res.size,), None, indices.data, self.data, _res.data)
             return _res
-        else: 
+        else:
             _res = clarray.Array.__getitem__(self, index)
         if not isinstance(_res, myclArray):
             _res.__class__ = myclArray

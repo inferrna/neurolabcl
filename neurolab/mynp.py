@@ -5,6 +5,7 @@ from pyopencl import array as clarray
 from pyopencl import algorithm
 import clsrc
 import clprograms
+from checker import chkmethod
 
 ctx = cl.create_some_context()
 queue = cl.CommandQueue(ctx)
@@ -123,6 +124,7 @@ class myclArray(clarray.Array):
             _res.reinit()
         return _res
 
+    @chkmethod
     def transpose(self, *args):
         replaces = np.array(args, dtype=np.uint32)
         olddims = np.array(self.shape, dtype=np.uint32)
@@ -151,7 +153,6 @@ class myclArray(clarray.Array):
             x, y, z = algorithm.copy_if(idxcl, "index[i]!=0", [("index", subscript.reshape((subscript.size,)))])
             _res = x[:y.get()]
             clarray.Array.setitem(self.reshape((self.size,)), _res, value, queue=queue)
-            #reself = self.reshape((self.size,))
         elif isinstance(subscript, tuple) or isinstance(subscript, slice):
             indices, newshape = self.createshapes(subscript)
             program = programs.sliceset(self.dtype, len(self.shape))
@@ -162,12 +163,10 @@ class myclArray(clarray.Array):
                 program.mislice(queue, (result.size,), None, indices.data, self.data, value.data)
             elif value.size == 1:
                 program.mislicesingle(queue, (result.size,), None, indices.data, self.data, value.data)
-            #return result
-            #reself.setitem(_res, value)
         else:
             self.setitem(subscript, _value, queue=queue)
-        #return res
 
+    @chkmethod
     def __sub__(self, other):
         if isinstance(other, myclArray) and not self.shape == other.shape:
             if self.size == 1 and other.size>2:
@@ -190,6 +189,7 @@ class myclArray(clarray.Array):
         res = _res#myclArray(queue, self.shape, _res.dtype, data=_res.data)
         return res
 
+    @chkmethod
     def __add__(self, other):
         if isinstance(other, myclArray) and not self.shape == other.shape:
             if self.size<2 and other.size>2:

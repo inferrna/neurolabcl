@@ -31,6 +31,26 @@ def convertinst(inst, varbls):
             newvs.append(varbl)
     return tuple(newvs)
 
+def chkvoidmethod(func):
+    npfunc = ndarray.__dict__[func.__name__]
+    def wrapper(*args, **kw):
+        #print("wrapper", args, kw)
+        newargs = convertinst(array.Array, args)
+        func(*args, **kw)
+        npfunc(*newargs, **kw)
+        npres = newargs[0] 
+        clres = args[0].get()
+        #print(npres)
+        #print(clres)
+        tst = False
+        if isinstance(npres, ndarray):
+            tst = ((abs(clres-npres))<0.00001).all()
+        else:
+            tst = (abs(clres-npres))<0.00001
+        assert tst==True, "Error in {2}. Result from cl \n{0}\n does not equal result from np\n{1}"\
+                          .format(clres, npres, func.__name__)
+    return wrapper
+
 def chkmethod(func):
     npfunc = ndarray.__dict__[func.__name__]
     def wrapper(*args, **kw):
@@ -41,12 +61,13 @@ def chkmethod(func):
         clres = result.get()
         #print(npres)
         #print(clres)
+        tst = False
         if isinstance(npres, ndarray):
             tst = ((abs(clres-npres))<0.00001).all()
         else:
             tst = (abs(clres-npres))<0.00001
-        assert tst==True, "Result from cl \n{0}\n does not equal result from np\n{1}"\
-                          .format(clres, npres)
+        assert tst==True, "Error in {2}. Result from cl \n{0}\n does not equal result from np\n{1}"\
+                          .format(clres, npres, func.__name__)
         return result
     return wrapper
 

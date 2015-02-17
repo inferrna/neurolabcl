@@ -5,7 +5,7 @@ from pyopencl import array as clarray
 from pyopencl import algorithm
 import clsrc
 import clprograms
-from checker import chkmethod, justtime, chkfunc
+from checker import chkvoidmethod, chkmethod, justtime, chkfunc
 
 
 ctx = cl.create_some_context()
@@ -154,7 +154,7 @@ class myclArray(clarray.Array):
         return result
 
 
-    @chkmethod
+    @chkvoidmethod
     def __setitem__(self, subscript, _value):
         if isinstance(_value, myclArray) or 'myclArray' in str(type(_value)):
             value = _value
@@ -163,7 +163,7 @@ class myclArray(clarray.Array):
         elif isinstance(_value, np.ndarray):
             value = arr_from_np(_value).astype(self.dtype)
         else:
-            exit()
+            assert True==False, "Can not determine value type in setitem"
 
         if isinstance(subscript, myclArray) and subscript.is_boolean == True:
             idxcl = get_arng(self.size)#clarray.arange(queue, 0, self.size, 1, dtype=np.int32)
@@ -182,6 +182,7 @@ class myclArray(clarray.Array):
                 program.mislicesingle(queue, (result.size,), None, indices.data, self.data, value.data)
         else:
             self.setitem(subscript, _value, queue=queue)
+        #return self
 
     @chkmethod
     def __sub__(self, other):

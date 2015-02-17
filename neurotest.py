@@ -23,7 +23,7 @@ tar = y.reshape(size,1)
 net = nl.net.newff([[-7, 7]],[5, 1])
 net.trainf = nl.train.train_rprop
 # Train network
-error = net.train(inp, tar, epochs=500, show=100, goal=0.02)
+error = net.train(inp, tar, epochs=5, show=1, goal=0.02)
 
 # Simulate network
 out = net.sim(inp)

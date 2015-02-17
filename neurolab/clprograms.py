@@ -97,3 +97,12 @@ class programs():
                                                    clsrc.singlenegsubsrc
             programcache[key] = cl.Program(self.ctx, ksource).build()
         return programcache[key]
+
+    def argsort(self, *args):
+         key = args+('argsum',)
+         if not key in programcache.keys():
+             dtype = args[0]
+             programcache[key] = cl.algorithm.RadixSort(self.ctx, typemaps[dtype.name]+" *mkey, int *tosort",\
+                                                                          "mkey[i]", ["mkey", "tosort"])
+         return programcache[key]
+

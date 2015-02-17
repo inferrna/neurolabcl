@@ -14,9 +14,12 @@ programs = clprograms.programs(ctx)
 #random = np.random
 Inf = np.Inf
 mf = cl.mem_flags
+arngd = np.array([0])
+
+def get_arng(size):
+    return clarray.arange(queue, 0, size, 1, dtype=np.int32)
 
 class myBuffer(cl._cl.Buffer):
-    @justtime
     def __init__(self, *args, **kwargs):
         cl._cl.Buffer.__init__(self, *args, **kwargs)
         self.nowners = 0
@@ -28,7 +31,6 @@ class myBuffer(cl._cl.Buffer):
             self.release()
 
 class myclArray(clarray.Array):
-    @justtime
     def __init__(self, *args, **kwargs):
         clarray.Array.__init__(self, *args, **kwargs)
         self.reinit()
@@ -164,7 +166,7 @@ class myclArray(clarray.Array):
             exit()
 
         if isinstance(subscript, myclArray) and subscript.is_boolean == True:
-            idxcl = clarray.arange(queue, 0, self.size, 1, dtype=np.int32)
+            idxcl = get_arng(self.size)#clarray.arange(queue, 0, self.size, 1, dtype=np.int32)
             x, y, z = algorithm.copy_if(idxcl, "index[i]!=0", [("index", subscript.reshape((subscript.size,)))])
             _res = x[:y.get()]
             clarray.Array.setitem(self.reshape((self.size,)), _res, value, queue=queue)
@@ -347,7 +349,6 @@ class myrandom():
         return _res#myclArray(queue, _res.shape, _res.dtype, data=_res.data)
 
         
-@chkfunc
 def arr_from_np(nparr):
     if nparr.dtype == np.object:
         nparr = np.concatenate(nparr)
@@ -356,9 +357,9 @@ def arr_from_np(nparr):
 
 random = myrandom()
 
-@chkfunc
-def argmin(*args, **kwargs):
-    return arr_from_np(np.argmin(*args, **kwargs))
+#@chkfunc
+#def argmin(*args, **kwargs):
+#    return arr_from_np(np.argmin(*args, **kwargs))
 
 
 @chkfunc
@@ -482,7 +483,6 @@ def sqrt(a, out=None):
     return res
 
 
-@chkfunc
 def values(*args, **kwargs):
     return arr_from_np(np.values(*args, **kwargs))
 
@@ -501,7 +501,6 @@ def isinf(a, out=None):
     #return np.isinf(*args, **kwargs)
 
 
-@chkfunc
 def items(*args, **kwargs):
     return np.items(*args, **kwargs)
 
@@ -517,15 +516,14 @@ def abs(*args, **kwargs):
     else:
         return arr_from_np(np.abs(*args, **kwargs))
 
-@chkfunc
 def empty(shape, dtype=np.float32):
     #return arr_from_np( np.empty(*args, **kwargs) )
     return myclArray(queue, shape, dtype)
 
 
-@chkfunc
-def argmax(*args, **kwargs):
-    return arr_from_np(np.argmax(*args, **kwargs))
+#@chkfunc
+#def argmax(*args, **kwargs):
+#    return arr_from_np(np.argmax(*args, **kwargs))
 
 
 @chkfunc
@@ -556,8 +554,18 @@ def zeros_like(a, dtype=None, order='K', subok=True):
     res.reinit()
     return res
 
-
 @chkfunc
+def argmin(a):
+    return argsort(a)[0]
+@chkfunc
+def argmax(a):
+    return argsort(a)[-1]
+def argsort(a):
+    arng = get_arng(a.size)#clarray.arange(queue, 0, a.size, 1, dtype=np.int32)
+    prg = programs.argsort(a.dtype)
+    return prg(a, arng, key_bits=32)[0][1]
+
+
 def sum(a, axis=None, dtype=None, out=None, prg2load=programs.sum):
     #Transpose first to shift target axis to the end
     #do not transpose if axis already is the end

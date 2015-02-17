@@ -18,9 +18,9 @@ t3 = time.time()
 #carr.transpose(1,0,2,3)
 arng = nl.mynp.clarray.arange(nl.mynp.queue, 0, cs.size, 1, dtype=np.int32)
 csat = cs.reshape(cs.size).astype(np.float32)*1.3
-srt = nl.mynp.algorithm.RadixSort(nl.mynp.ctx, "float *mkey, int *tosort", "mkey[i]", ["mkey", "tosort"])#,\
+srt = nl.mynp.algorithm.RadixSort(nl.mynp.ctx, "float *mkey, int *tosort", "mkey[i]", ["tosort"])#,\
 #                                  index_dtype=np.int32, key_dtype=np.float32)
-csat, arng = srt(csat, arng, key_bits=32)[0]
+csrt = srt(csat, arng, key_bits=32)[0]
 #print(k)
 #csa.__class__ = array.Array
 #print(csa[k])

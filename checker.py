@@ -26,7 +26,11 @@ def convertinst(inst, varbls):
     newvs = []
     for varbl in varbls:
         if isinstance(varbl, inst):
-            newvs.append(varbl.get())
+            v = varbl.get()
+            if varbl.is_boolean:
+                newvs.append(v>0)
+            else:
+                newvs.append(v)
         else:
             newvs.append(varbl)
     return tuple(newvs)
@@ -47,16 +51,16 @@ def chkvoidmethod(func):
             tst = ((abs(clres-npres))<0.00001).all()
         else:
             tst = (abs(clres-npres))<0.00001
-        assert tst==True, "Error in {2}. Result from cl \n{0}\n does not equal result from np\n{1}"\
-                          .format(clres, npres, func.__name__)
+        assert tst==True, "Error in void method {2}. Result from cl \n{0}\n does not equal result from np\n{1}. Args was {3}"\
+                          .format(clres, npres, func.__name__, args)
     return wrapper
 
 def chkmethod(func):
     npfunc = ndarray.__dict__[func.__name__]
     def wrapper(*args, **kw):
-        #print("wrapper", args, kw)
         result = func(*args, **kw)
         newargs = convertinst(array.Array, args)
+        #print("wrapper "+func.__name__, newargs, kw)
         npres = npfunc(*newargs, **kw)
         clres = result.get()
         #print(npres)
@@ -66,15 +70,15 @@ def chkmethod(func):
             tst = ((abs(clres-npres))<0.00001).all()
         else:
             tst = (abs(clres-npres))<0.00001
-        assert tst==True, "Error in {2}. Result from cl \n{0}\n does not equal result from np\n{1}"\
-                          .format(clres, npres, func.__name__)
+        assert tst==True, "Error in method {2}. Result from cl \n{0}\n does not equal result from np\n{1}. Args was {3}"\
+                          .format(clres, npres, func.__name__, args)
         return result
     return wrapper
 
 def chkfunc(func):
     npfunc = np.__dict__[func.__name__]
     def wrapper(*args, **kw):
-        #print("wrapper", args, kw)
+        #print("wrapper "+func.__name__, args, kw)
         result = func(*args, **kw)
         newargs = convertinst(array.Array, args)
         npres = npfunc(*newargs, **kw)
@@ -85,8 +89,8 @@ def chkfunc(func):
             tst = ((abs(clres-npres))<0.00001).all()
         else:
             tst = (abs(clres-npres))<0.00001
-        assert tst==True, "Result from cl \n{0}\n does not equal result from np\n{1}"\
-                          .format(clres, npres)
+        assert tst==True, "Error in func {2}. Result from cl \n{0}\n does not equal result from np\n{1}. Args was {3}"\
+                          .format(clres, npres, func.__name__, args)
         return result
     return wrapper
 

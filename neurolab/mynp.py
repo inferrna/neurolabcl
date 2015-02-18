@@ -164,12 +164,13 @@ class myclArray(clarray.Array):
             value = arr_from_np(_value).astype(self.dtype)
         else:
             assert True==False, "Can not determine value type in setitem"
-
         if isinstance(subscript, myclArray) and subscript.is_boolean == True:
             idxcl = get_arng(self.size)#clarray.arange(queue, 0, self.size, 1, dtype=np.int32)
             x, y, z = algorithm.copy_if(idxcl, "index[i]!=0", [("index", subscript.reshape((subscript.size,)))])
             _res = x[:y.get()]
             clarray.Array.setitem(self.reshape((self.size,)), _res, value, queue=queue)
+        #elif isinstance(subscript, myclArray) and subscript.ndim > 1:
+        #    clarray.Array.setitem(self.reshape(self.size), subscript.reshape(subscript.size), value, queue=queue)
         elif isinstance(subscript, tuple) or isinstance(subscript, slice):
             indices, newshape = self.createshapes(subscript)
             program = programs.sliceset(self.dtype, len(self.shape))
@@ -181,7 +182,7 @@ class myclArray(clarray.Array):
             elif value.size == 1:
                 program.mislicesingle(queue, (result.size,), None, indices.data, self.data, value.data)
         else:
-            self.setitem(subscript, _value, queue=queue)
+            self.setitem(subscript, value, queue=queue)
         #return self
 
     @chkmethod

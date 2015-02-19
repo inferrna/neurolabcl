@@ -4,18 +4,22 @@ slicedefs = """
 """
 norecslicesrc = """
 uint slice{0}(uint id, __global int4 *params, const uint c)<%
-    int N = params[{3}].s0;
-    int x = params[{3}].s1;
-    int y = params[{3}].s2;
-    int d = abs(params[{3}].s3);
-    int minny = min(N, y);
-    int sd = params[{3}].s3/d; //Sign
-    int ipg = 1+(minny-(x%N)-1)/d;
-    int group = id/ipg;
-    {1}group = slice{2}(group, params, c-1);
+    int N = params[{3}].s0;      //Size
+    int x = params[{3}].s1;      //Start
+    int y = params[{3}].s2;      //End
+    int d = abs(params[{3}].s3); //Step
+    int minny = min(N, y);       //Real end
+    int sd = params[{3}].s3/d;   //Sign
+    int ipg = 1+(minny-x-1)/d;   //Items per group
+    int group = id/ipg;  //Current group as total
+    {1}group = slice{2}(group, params, c-1); //Current group as subgroup
     int groupstart = group*N;
-    int cmd = id%ipg;
-    int groupid = x+(minny-1-x)*((1-sd)/2)+sd*cmd*d;
+    int cgi = id%ipg;    //Index in current group
+    int groupid;
+    if(sd>0)
+        groupid = x+cgi*d;
+    else
+        groupid = (minny-1-x)-cgi*d;
     return  groupid+groupstart;
 %>
 """
@@ -53,6 +57,7 @@ __kernel void mislicesingle(__global int4 *params, __global dtype *data, __globa
     if(get_local_id(0) == 0){
         value = source[0];
     }
+    barrier(CLK_LOCAL_MEM_FENCE);
     data[slice(gid, params, PC-1)] = value;
 }
 """
@@ -164,6 +169,7 @@ __kernel void misinglesum(__global dtype *data, __global dtype *result, __global
     uint gid = get_global_id(0);
     __local dtype param;
     if(get_local_id(0)==0) param = gparam[0];
+    barrier(CLK_LOCAL_MEM_FENCE);
     dtype res = data[gid] + param;
     result[gid] = res;
 }
@@ -173,6 +179,7 @@ __kernel void misinglemul(__global dtype *data, __global dtype *result, __global
     uint gid = get_global_id(0);
     __local dtype param;
     if(get_local_id(0)==0) param = gparam[0];
+    barrier(CLK_LOCAL_MEM_FENCE);
     result[gid] = data[gid]*param;
 }
 """
@@ -181,6 +188,7 @@ __kernel void misinglenegsub(__global dtype *data, __global dtype *result, __glo
     uint gid = get_global_id(0);
     __local dtype param;
     if(get_local_id(0)==0) param = gparam[0];
+    barrier(CLK_LOCAL_MEM_FENCE);
     result[gid] = param - data[gid];
 }
 """
@@ -189,6 +197,7 @@ __kernel void misinglesub(__global dtype *data, __global dtype *result, __global
     uint gid = get_global_id(0);
     __local dtype param;
     if(get_local_id(0)==0) param = gparam[0];
+    barrier(CLK_LOCAL_MEM_FENCE);
     result[gid] = data[gid] - param;
 }
 """

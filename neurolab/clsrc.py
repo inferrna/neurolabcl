@@ -202,3 +202,19 @@ __kernel void misinglesub(__global dtype *data, __global dtype *result, __global
 }
 """
 
+smalldotsrc = """
+__kernel void midot(__global dtype *data, __global dtype *gparam, __global dtype *result){
+    uint gid = get_global_id(0);
+    uint sgd = gid*PC;
+    dtype res = 0;
+    __local dtype lparam[PC];
+    event_t a[2];
+    a[0] = async_work_group_copy(lparam, gparam, PC, 0);
+    wait_group_events(1, a);
+    for(uint i=0; i<PC; i++){
+        res += data[sgd+i] * lparam[i];
+    }
+    result[gid] = res;
+}
+"""
+

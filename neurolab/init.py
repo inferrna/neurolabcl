@@ -134,7 +134,6 @@ def initnw(layer):
     w = w * x
 
     b += np.dot(w, y)
-
     layer.np['w'][:] = w
     layer.np['b'][:] = b
 

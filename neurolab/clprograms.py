@@ -114,3 +114,10 @@ class programs():
                                                                           "mkey[i]", ["mkey", "tosort"])
          return programcache[key]
 
+    def dot(self, *args):
+        key = args+('dot',)
+        if not key in programcache.keys():
+            dtype, nums = args
+            ksource = clsrc.slicedefs.format(typemaps[dtype.name], nums) + clsrc.smalldotsrc;
+            programcache[key] = cl.Program(self.ctx, ksource).build()
+        return programcache[key]

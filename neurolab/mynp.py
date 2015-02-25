@@ -163,7 +163,7 @@ class myclArray(clarray.Array):
         elif isinstance(_value, np.ndarray):
             value = arr_from_np(_value).astype(self.dtype)
         else:
-            assert True==False, "Can not determine value type in setitem"
+            assert True==False, "Can not determine value type in setitem of "+str(type(_value))
         if isinstance(subscript, myclArray) and subscript.is_boolean == True:
             idxcl = get_arng(self.size)#clarray.arange(queue, 0, self.size, 1, dtype=np.int32)
             x, y, z = algorithm.copy_if(idxcl, "index[i]!=0", [("index", subscript.reshape((subscript.size,)))])
@@ -228,7 +228,7 @@ class myclArray(clarray.Array):
         res = _res#myclArray(queue, self.shape, _res.dtype, data=_res.data)
         return res
 
-    @chkmethod
+    @chkvoidmethod
     def __iadd__(self, other):
         if isinstance(other, myclArray) and not self.shape == other.shape:
             if self.size<2 and other.size>2:
@@ -374,11 +374,17 @@ def concatenate(arrays, axis=0):
 
 @chkfunc
 def dot(a, b, out=None):
+    assert a.shape[-1] == b.size, "Sizes does not match, {0} vs {1}".format(a.shape[-1], b.size)
+    prg = programs.dot(a.dtype, a.shape[-1])
+    res = empty(a.shape[:-1], dtype=a.dtype)
+    prg.midot(queue, (res.size,), None, a.data, b.data, res.data)
     #TODO: work with out
-    _res = clarray.dot(a, b)#np.dot(*args, **kwargs)
-    _res.__class__ = myclArray
-    res = _res#myclArray(queue, _res.shape, _res.dtype, data=_res.data)
-    res.reinit()
+    #_res = clarray.dot(a, b)#np.dot(*args, **kwargs)
+    #print("Dot result")
+    #print(_res)
+    #_res.__class__ = myclArray
+    #res = _res#myclArray(queue, _res.shape, _res.dtype, data=_res.data)
+    #res.reinit()
     return res
     
 

@@ -132,6 +132,12 @@ def initnw(layer):
     x = 2. / (minmax[:, 1] - minmax[:, 0])
     y = 1. - minmax[:, 1] * x
     w = w * x
+    print("b==", b)
+    print("w==", w)
+    print("y==", y)
+    print("np.dot(w, y) ==", np.dot(w, y))
+    print("b + np.dot(w, y) ==", b + np.dot(w, y))
+    print("layer.np['b'][:]==", layer.np['b'][:])
 
     b += np.dot(w, y)
     layer.np['w'][:] = w

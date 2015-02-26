@@ -39,8 +39,8 @@ def chkvoidmethod(func):
     npfunc = ndarray.__dict__[func.__name__]
     def wrapper(*args, **kw):
         #print("wrapper", args, kw)
-        newargs = convertinst(array.Array, args)
         func(*args, **kw)
+        newargs = convertinst(array.Array, args)
         npfunc(*newargs, **kw)
         npres = newargs[0] 
         clres = args[0].get()

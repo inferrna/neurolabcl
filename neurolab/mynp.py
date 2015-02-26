@@ -163,7 +163,7 @@ class myclArray(clarray.Array):
         elif isinstance(_value, np.ndarray):
             value = arr_from_np(_value).astype(self.dtype)
         else:
-            assert True==False, "Can not determine value type in setitem of "+str(type(_value))
+            assert True==False, "Can not determine value type in setitem of {0}".format(_value)
         if isinstance(subscript, myclArray) and subscript.is_boolean == True:
             idxcl = get_arng(self.size)#clarray.arange(queue, 0, self.size, 1, dtype=np.int32)
             x, y, z = algorithm.copy_if(idxcl, "index[i]!=0", [("index", subscript.reshape((subscript.size,)))])

@@ -53,7 +53,6 @@ class programs():
                 slicesrcl = [clsrc.norecslicesrc.format("", "//", 0, nds)]
             slicesrc = "\n".join(slicesrcl).replace("<%", "{").replace("%>", "}")+"\n"
             ksource = clsrc.slicedefs.format(typemaps[dtype.name], ndim) + slicesrc + clsrc.slicegetsrc
-            print(ksource)
             programcache[key] = cl.Program(self.ctx, ksource).build()
         return programcache[key]
 

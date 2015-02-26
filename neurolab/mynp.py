@@ -182,7 +182,7 @@ class myclArray(clarray.Array):
             elif value.size == 1:
                 program.mislicesingle(queue, (result.size,), None, indices.data, self.data, value.data)
         else:
-            self.setitem(subscript, value, queue=queue)
+            clarray.Array.setitem(self, subscript, value, queue=queue)
         #return self
 
     @chkmethod
@@ -228,7 +228,7 @@ class myclArray(clarray.Array):
         res = _res#myclArray(queue, self.shape, _res.dtype, data=_res.data)
         return res
 
-    @chkvoidmethod
+    #@chkvoidmethod
     def __iadd__(self, other):
         if isinstance(other, myclArray) and not self.shape == other.shape:
             if self.size<2 and other.size>2:
@@ -236,17 +236,13 @@ class myclArray(clarray.Array):
             if other.size == 1:
                 program = programs.singlesms(self.dtype)
                 program.misinglesum(queue, (self.size,), None, self.data, self.data, other.data)
-                _res = self
+                return self
             elif self.size == other.size:
-                _res = clarray.Array.__iadd__(self.reshape(self.size), other.reshape(self.size)).reshape(self.shape)
-            #    assert False==True, "Unimlimented mul. shapes is {0} and {1}".format(self.shape, other.shape)
+                res = clarray.Array.__iadd__(self.reshape(self.size), other.reshape(self.size)).reshape(self.shape)
+                return res
         else:
-            _res = clarray.Array.__iadd__(self, other)
-        if not isinstance(_res, myclArray):
-            _res.__class__ = myclArray
-            _res.reinit()
-        res = _res
-        return res
+            res = clarray.Array.__iadd__(self, other)
+            return res
 
     @chkmethod
     def __mul__(self, other):
@@ -257,7 +253,7 @@ class myclArray(clarray.Array):
                 program = programs.singlesms(self.dtype)
                 _res = empty(self.shape, self.dtype)
                 #try:
-                program.misinglemul(queue, (_res.size,), None, self.base_data, _res.data, other.base_data)
+                program.misinglemul(queue, (_res.size,), None, self.base_data, _res.data, other.data)
                 #except:
                 #    print("types is", type(_res), type(other))
                 #    exit()

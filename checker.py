@@ -38,14 +38,11 @@ def convertinst(inst, varbls):
 def chkvoidmethod(func):
     npfunc = ndarray.__dict__[func.__name__]
     def wrapper(*args, **kw):
-        #print("wrapper", args, kw)
-        func(*args, **kw)
+        result = func(*args, **kw)
         newargs = convertinst(array.Array, args)
         npfunc(*newargs, **kw)
         npres = newargs[0] 
         clres = args[0].get()
-        #print(npres)
-        #print(clres)
         tst = False
         if isinstance(npres, ndarray):
             tst = ((abs(clres-npres))<0.00001).all()
@@ -53,6 +50,7 @@ def chkvoidmethod(func):
             tst = (abs(clres-npres))<0.00001
         assert tst==True, "Error in void method {2}. Result from cl \n{0}\n does not equal result from np\n{1}. Args was {3}"\
                           .format(clres, npres, func.__name__, args)
+        return result
     return wrapper
 
 def chkmethod(func):

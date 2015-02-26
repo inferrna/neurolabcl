@@ -213,11 +213,14 @@ class myclArray(clarray.Array):
         if isinstance(other, myclArray) and not self.shape == other.shape:
             if self.size<2 and other.size>2:
                 self, other = other, self
-            if other.size==1:
+            if other.size==1 and not other.offset:
+                print(other.offset)
                 result = empty(self.shape, self.dtype)
                 program = programs.singlesms(self.dtype)
                 program.misinglesum(queue, (self.size,), None, self.data, result.data, other.data)
                 _res = result
+            elif other.size==1 and other.offset:
+                _res = clarray.Array.__add__(self, other.get()[0])
             elif self.size == other.size:
                 _res = clarray.Array.__add__(self, other)
         else:
@@ -233,10 +236,12 @@ class myclArray(clarray.Array):
         if isinstance(other, myclArray) and not self.shape == other.shape:
             if self.size<2 and other.size>2:
                 self, other = other, self
-            if other.size == 1:
+            if other.size == 1 and not other.offset:
                 program = programs.singlesms(self.dtype)
                 program.misinglesum(queue, (self.size,), None, self.data, self.data, other.data)
                 return self
+            elif other.size==1 and other.offset:
+                res = clarray.Array.__iadd__(self, other.get()[0])                
             elif self.size == other.size:
                 res = clarray.Array.__iadd__(self.reshape(self.size), other.reshape(self.size)).reshape(self.shape)
                 return res
@@ -249,7 +254,7 @@ class myclArray(clarray.Array):
         if isinstance(other, myclArray):
             if self.size==1 and other.size>2:
                 self, other = other, self
-            if other.size == 1:
+            if other.size == 1 and not other.offset:
                 program = programs.singlesms(self.dtype)
                 _res = empty(self.shape, self.dtype)
                 #try:
@@ -257,6 +262,8 @@ class myclArray(clarray.Array):
                 #except:
                 #    print("types is", type(_res), type(other))
                 #    exit()
+            elif other.size==1 and other.offset:
+                _res = clarray.Array.__mul__(self, other.get()[0])
             else:
                 _res = clarray.Array.__mul__(self, other.reshape(self.shape))
             #assert False==True, "Unimlimented mul"

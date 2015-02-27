@@ -122,7 +122,7 @@ class myclArray(clarray.Array):
         indices = arr_from_np(npindices)
         return indices, newshape
 
-    @chkmethod
+    #@chkmethod
     def __getitem__(self, index):
         if isinstance(index, myclArray) and index.is_boolean == True:
             x, y, z = algorithm.copy_if(self.reshape((self.size,)), "index[i]!=0", [("index", index.reshape((index.size,)))])
@@ -257,22 +257,36 @@ class myclArray(clarray.Array):
             if other.size == 1 and not other.offset:
                 program = programs.singlesms(self.dtype)
                 _res = empty(self.shape, self.dtype)
-                #try:
-                program.misinglemul(queue, (_res.size,), None, self.base_data, _res.data, other.data)
-                #except:
-                #    print("types is", type(_res), type(other))
-                #    exit()
+                program.misinglemul(queue, (_res.size,), None, self.data, _res.data, other.data)
             elif other.size==1 and other.offset:
                 _res = clarray.Array.__mul__(self, other.get()[0])
             else:
                 _res = clarray.Array.__mul__(self, other.reshape(self.shape))
-            #assert False==True, "Unimlimented mul"
         else:
             _res = clarray.Array.__mul__(self, other)
         if not isinstance(_res, myclArray):
             _res.__class__ = myclArray
             _res.reinit()
         res = _res#myclArray(queue, self.shape, _res.dtype, data=_res.data)
+        return res
+
+    def __imul__(self, other):
+        if isinstance(other, myclArray):
+            if self.size==1 and other.size>2:
+                self, other = other, self
+            if other.size == 1 and not other.offset:
+                program = programs.singlesms(self.dtype)
+                program.misinglemul(queue, (self.size,), None, self.data, self.data, other.data)
+                return self
+            elif other.size==1 and other.offset:
+                res = clarray.Array.__imul__(self, other.get()[0])
+            else:
+                res = clarray.Array.__imul__(self, other.reshape(self.shape))
+        else:
+            res = clarray.Array.__imul__(self, other)
+        if not isinstance(res, myclArray):
+            res.__class__ = myclArray
+            res.reinit()
         return res
 
     @chkmethod

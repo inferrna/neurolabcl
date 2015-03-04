@@ -6,7 +6,7 @@ from pyopencl import algorithm
 import clsrc
 import clprograms
 from checker import chkvoidmethod, chkmethod, justtime, chkfunc
-
+from builtins import sum as bsum
 
 ctx = cl.create_some_context()
 queue = cl.CommandQueue(ctx)
@@ -200,6 +200,19 @@ class myclArray(clarray.Array):
                 _res = result
             elif self.size == other.size:
                 _res = clarray.Array.__sub__(self, other)
+            elif self.shape[-other.ndim:] == other.shape:
+                result = empty(self.shape, self.dtype)
+                program = programs.ndsms(self.dtype)
+                s1 = np.prod(self.shape[:-other.ndim])
+                s2 = np.prod(other.shape)
+                print(s1, s2)
+                program.ndsub(queue,\
+                        tuple([int(s1), int(s2)]),\
+                        None,\
+                        self.data,\
+                        result.data,\
+                        other.data)
+                _res = result
         else:
             _res = clarray.Array.__sub__(self, other)
         if not isinstance(_res, myclArray):

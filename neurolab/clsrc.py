@@ -201,6 +201,33 @@ __kernel void misinglesub(__global dtype *data, __global dtype *result, __global
     result[gid] = data[gid] - param;
 }
 """
+ndsubsrc = """
+__kernel void ndsub(__global dtype *data, __global dtype *result, __global dtype *gparam){
+    uint gid0 = get_global_id(0);
+    uint gid1 = get_global_id(1);
+    uint gs1 = get_global_size(1);
+    uint did = gid0*gs1 + gid1;
+    result[did] = data[did] - gparam[gid1];
+}
+"""
+ndmulsrc = """
+__kernel void ndmul(__global dtype *data, __global dtype *result, __global dtype *gparam){
+    uint gid0 = get_global_id(0);
+    uint gid1 = get_global_id(1);
+    uint gs1 = get_global_size(1);
+    uint did = gid0*gs1 + gid1;
+    result[did] = data[did] * gparam[gid1];
+}
+"""
+ndsumsrc = """
+__kernel void ndsum(__global dtype *data, __global dtype *result, __global dtype *gparam){
+    uint gid0 = get_global_id(0);
+    uint gid1 = get_global_id(1);
+    uint gs1 = get_global_size(1);
+    uint did = gid0*gs1 + gid1;
+    result[did] = data[did] + gparam[gid1];
+}
+"""
 
 smalldotsrc = """
 __kernel void midot(__global dtype *data, __global dtype *gparam, __global dtype *result){

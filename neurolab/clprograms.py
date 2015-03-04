@@ -93,6 +93,17 @@ class programs():
             programcache[key] = cl.Program(self.ctx, ksource).build()
         return programcache[key]
 
+    def ndsms(self, *args):
+        key = args+('ndsms',)
+        if not key in programcache.keys():
+            dtype = args[0]
+            ksource = clsrc.slicedefs.format(typemaps[dtype.name], 0) +\
+                                                   clsrc.ndsumsrc +\
+                                                   clsrc.ndmulsrc +\
+                                                   clsrc.ndsubsrc
+            print(ksource)
+            programcache[key] = cl.Program(self.ctx, ksource).build()
+        return programcache[key]
     def singlesms(self, *args):
         key = args+('singlesms',)
         if not key in programcache.keys():

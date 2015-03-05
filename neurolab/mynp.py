@@ -17,7 +17,7 @@ mf = cl.mem_flags
 arngd = np.array([0])
 
 def get_arng(size):
-    return clarray.arange(queue, 0, size, 1, dtype=np.int32)
+    return clarray.arange(queue, 0, size, 1, dtype=np.uint32)
 
 class myBuffer(cl._cl.Buffer):
     def __init__(self, *args, **kwargs):
@@ -185,7 +185,7 @@ class myclArray(clarray.Array):
             clarray.Array.setitem(self, subscript, value, queue=queue)
         #return self
 
-    @chkmethod
+    #@chkmethod
     def __sub__(self, other):
         if isinstance(other, myclArray) and not self.shape == other.shape:
             if self.size == 1 and other.size>2:
@@ -205,9 +205,19 @@ class myclArray(clarray.Array):
                 program = programs.ndsms(self.dtype)
                 s1 = np.prod(self.shape[:-other.ndim])
                 s2 = np.prod(other.shape)
-                print(s1, s2)
                 program.ndsub(queue,\
                         tuple([int(s1), int(s2)]),\
+                        None,\
+                        self.data,\
+                        result.data,\
+                        other.data)
+                _res = result
+            elif self.shape[:other.ndim] == other.shape:
+                result = empty(self.shape, self.dtype)
+                N = np.prod(self.shape[other.ndim:])
+                program = programs.ndrsms(self.dtype, N)
+                program.ndrsub(queue,\
+                        (self.size,),\
                         None,\
                         self.data,\
                         result.data,\
@@ -236,6 +246,29 @@ class myclArray(clarray.Array):
                 _res = clarray.Array.__add__(self, other.get()[0])
             elif self.size == other.size:
                 _res = clarray.Array.__add__(self, other)
+            elif self.shape[-other.ndim:] == other.shape:
+                result = empty(self.shape, self.dtype)
+                program = programs.ndsms(self.dtype)
+                s1 = np.prod(self.shape[:-other.ndim])
+                s2 = np.prod(other.shape)
+                program.ndsum(queue,\
+                        tuple([int(s1), int(s2)]),\
+                        None,\
+                        self.data,\
+                        result.data,\
+                        other.data)
+                _res = result
+            elif self.shape[:other.ndim] == other.shape:
+                result = empty(self.shape, self.dtype)
+                N = np.prod(self.shape[other.ndim:])
+                program = programs.ndrsms(self.dtype, N)
+                program.ndrsum(queue,\
+                        (self.size,),\
+                        None,\
+                        self.data,\
+                        result.data,\
+                        other.data)
+                _res = result
         else:
             _res = clarray.Array.__add__(self, other)
         if not isinstance(_res, myclArray):
@@ -258,6 +291,29 @@ class myclArray(clarray.Array):
             elif self.size == other.size:
                 res = clarray.Array.__iadd__(self.reshape(self.size), other.reshape(self.size)).reshape(self.shape)
                 return res
+            elif self.shape[-other.ndim:] == other.shape:
+                result = empty(self.shape, self.dtype)
+                program = programs.ndsms(self.dtype)
+                s1 = np.prod(self.shape[:-other.ndim])
+                s2 = np.prod(other.shape)
+                program.ndsum(queue,\
+                        tuple([int(s1), int(s2)]),\
+                        None,\
+                        self.data,\
+                        self.data,\
+                        other.data)
+                _res = result
+            elif self.shape[:other.ndim] == other.shape:
+                result = empty(self.shape, self.dtype)
+                N = np.prod(self.shape[other.ndim:])
+                program = programs.ndrsms(self.dtype, N)
+                program.ndrsum(queue,\
+                        (self.size,),\
+                        None,\
+                        self.data,\
+                        self.data,\
+                        other.data)
+                _res = result
         else:
             res = clarray.Array.__iadd__(self, other)
             return res
@@ -273,6 +329,29 @@ class myclArray(clarray.Array):
                 program.misinglemul(queue, (_res.size,), None, self.data, _res.data, other.data)
             elif other.size==1 and other.offset:
                 _res = clarray.Array.__mul__(self, other.get()[0])
+            elif self.shape[-other.ndim:] == other.shape:
+                result = empty(self.shape, self.dtype)
+                program = programs.ndsms(self.dtype)
+                s1 = np.prod(self.shape[:-other.ndim])
+                s2 = np.prod(other.shape)
+                program.ndmul(queue,\
+                        tuple([int(s1), int(s2)]),\
+                        None,\
+                        self.data,\
+                        result.data,\
+                        other.data)
+                _res = result
+            elif self.shape[:other.ndim] == other.shape:
+                result = empty(self.shape, self.dtype)
+                N = np.prod(self.shape[other.ndim:])
+                program = programs.ndrsms(self.dtype, N)
+                program.ndrmul(queue,\
+                        (self.size,),\
+                        None,\
+                        self.data,\
+                        result.data,\
+                        other.data)
+                _res = result
             else:
                 _res = clarray.Array.__mul__(self, other.reshape(self.shape))
         else:
@@ -293,6 +372,29 @@ class myclArray(clarray.Array):
                 return self
             elif other.size==1 and other.offset:
                 res = clarray.Array.__imul__(self, other.get()[0])
+            elif self.shape[-other.ndim:] == other.shape:
+                result = empty(self.shape, self.dtype)
+                program = programs.ndsms(self.dtype)
+                s1 = np.prod(self.shape[:-other.ndim])
+                s2 = np.prod(other.shape)
+                program.ndmul(queue,\
+                        tuple([int(s1), int(s2)]),\
+                        None,\
+                        self.data,\
+                        self.data,\
+                        other.data)
+                _res = result
+            elif self.shape[:other.ndim] == other.shape:
+                result = empty(self.shape, self.dtype)
+                N = np.prod(self.shape[other.ndim:])
+                program = programs.ndrsms(self.dtype, N)
+                program.ndrmul(queue,\
+                        (self.size,),\
+                        None,\
+                        self.data,\
+                        self.data,\
+                        other.data)
+                _res = result
             else:
                 res = clarray.Array.__imul__(self, other.reshape(self.shape))
         else:
@@ -369,13 +471,13 @@ class myrandom():
         _res.__class__ = myclArray
         _res.reinit()
         return _res#myclArray(queue, _res.shape, _res.dtype, data=_res.data)
-    def rand(self, *args):
-        _res = clrandom.rand(queue, args, np.float32, a=0.0, b=1.0)
+    def rand(self, shape, dtype=np.float32):
+        _res = clrandom.rand(queue, shape, dtype, a=0.0, b=1.0)
         _res.__class__ = myclArray
         _res.reinit()
         return _res#myclArray(queue, _res.shape, _res.dtype, data=_res.data)
-    def randn(self, *args):
-        _res = clrandom.rand(queue, args, np.float32, a=-1.0, b=1.0)
+    def randn(self, shape, dtype=np.float32):
+        _res = clrandom.rand(queue, shape, dtype, a=-1.0, b=1.0)
         _res.__class__ = myclArray
         _res.reinit()
         return _res#myclArray(queue, _res.shape, _res.dtype, data=_res.data)
@@ -601,7 +703,10 @@ def argmax(a):
 def argsort(a):
     arng = get_arng(a.size)#clarray.arange(queue, 0, a.size, 1, dtype=np.int32)
     prg = programs.argsort(a.dtype)
-    return prg(a, arng, key_bits=32)[0][1]
+    #print(arng, a)
+    ret = prg(a, arng, key_bits=32)
+    #print(ret)
+    return ret[0][1]
 
 
 def sum(a, axis=None, dtype=None, out=None, prg2load=programs.sum):
@@ -626,7 +731,7 @@ def sum(a, axis=None, dtype=None, out=None, prg2load=programs.sum):
     program = prg2load(a.dtype, a.shape[axis])
     #Sum for last axis
     result = empty(tuple(olddims[replaces[:-1]]), a.dtype)
-    program.misum(queue, (a.size//a.shape[axis],), None, cltrresult, result.data)
+    program.misum(queue, (int(a.size//a.shape[axis]),), None, cltrresult, result.data)
     return result
 
 @chkfunc

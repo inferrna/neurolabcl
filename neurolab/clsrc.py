@@ -228,6 +228,27 @@ __kernel void ndsum(__global dtype *data, __global dtype *result, __global dtype
     result[did] = data[did] + gparam[gid1];
 }
 """
+ndrsubsrc = """
+__kernel void ndrsub(__global dtype *data, __global dtype *result, __global dtype *gparam){
+    uint gid = get_global_id(0);
+    uint did = gid/PC;
+    result[gid] = data[gid] - gparam[did];
+}
+"""
+ndrmulsrc = """
+__kernel void ndrmul(__global dtype *data, __global dtype *result, __global dtype *gparam){
+    uint gid = get_global_id(0);
+    uint did = gid/PC;
+    result[gid] = data[gid] * gparam[did];
+}
+"""
+ndrsumsrc = """
+__kernel void ndrsum(__global dtype *data, __global dtype *result, __global dtype *gparam){
+    uint gid = get_global_id(0);
+    uint did = gid/PC;
+    result[gid] = data[gid] + gparam[did];
+}
+"""
 
 smalldotsrc = """
 __kernel void midot(__global dtype *data, __global dtype *gparam, __global dtype *result){

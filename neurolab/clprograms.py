@@ -101,9 +101,21 @@ class programs():
                                                    clsrc.ndsumsrc +\
                                                    clsrc.ndmulsrc +\
                                                    clsrc.ndsubsrc
+            programcache[key] = cl.Program(self.ctx, ksource).build()
+        return programcache[key]
+
+    def ndrsms(self, *args):
+        key = args+('ndrsms',)
+        if not key in programcache.keys():
+            dtype, N = args
+            ksource = clsrc.slicedefs.format(typemaps[dtype.name], N) +\
+                                                   clsrc.ndrsumsrc +\
+                                                   clsrc.ndrmulsrc +\
+                                                   clsrc.ndrsubsrc
             print(ksource)
             programcache[key] = cl.Program(self.ctx, ksource).build()
         return programcache[key]
+
     def singlesms(self, *args):
         key = args+('singlesms',)
         if not key in programcache.keys():
@@ -117,10 +129,10 @@ class programs():
         return programcache[key]
 
     def argsort(self, *args):
-         key = args+('argsum',)
+         key = args+('argsort',)
          if not key in programcache.keys():
              dtype = args[0]
-             programcache[key] = cl.algorithm.RadixSort(self.ctx, typemaps[dtype.name]+" *mkey, int *tosort",\
+             programcache[key] = cl.algorithm.RadixSort(self.ctx, typemaps[dtype.name]+" *mkey, unsigned int *tosort",\
                                                                           "mkey[i]", ["mkey", "tosort"])
          return programcache[key]
 

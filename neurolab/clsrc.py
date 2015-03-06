@@ -61,7 +61,19 @@ __kernel void mislicesingle(__global int4 *params, __global dtype *data, __globa
     data[slice(gid, params, PC-1)] = value;
 }
 """
+getbyidssrc = """
+__kernel void mislice(__global size_t *params, __global dtype *data, __global dtype *result){1
+    size_t gid0 = get_global_id(0);  //Addr inside block
+    size_t gs0 = get_global_size(0); //Block size  
+    size_t gid1 = get_global_id(1);  //Block addr in result array
+    size_t idx = params[gid1];       //Block addr in source data
+    size_t didx = idx*gs0+gid0;      //Addr in source data
+    size_t ridx = gid1*gs0+gid0;     //Addr in result array
+    result[ridx] = data[didx];
 
+
+}
+"""
 
 signsrc = """
 __kernel void asign(__global float *inpt, __global float *outpt){

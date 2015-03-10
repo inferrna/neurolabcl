@@ -97,9 +97,6 @@ class myclArray(clarray.Array):
         res = _res#myclArray(queue, _res.shape, _res.dtype, data=_res.data)
         return res
 
-    #def _new_like_me(self):
-    #    return empty(self.shape, self.dtype)
-
     def createshapes(self, index):
         if isinstance(index, slice):
             index = (index,)
@@ -122,7 +119,7 @@ class myclArray(clarray.Array):
         indices = arr_from_np(npindices)
         return indices, newshape
 
-    #@chkmethod
+    @chkmethod
     def __getitem__(self, index):
         if isinstance(index, myclArray) and index.is_boolean == True:
             x, y, z = algorithm.copy_if(self.reshape((self.size,)), "index[i]!=0", [("index", index.reshape((index.size,)))])
@@ -191,7 +188,7 @@ class myclArray(clarray.Array):
             clarray.Array.setitem(self, subscript, value, queue=queue)
         #return self
 
-    #@chkmethod
+    @chkmethod
     def __sub__(self, other):
         if isinstance(other, myclArray) and not self.shape == other.shape:
             if self.size == 1 and other.size>2:
@@ -283,7 +280,7 @@ class myclArray(clarray.Array):
         res = _res#myclArray(queue, self.shape, _res.dtype, data=_res.data)
         return res
 
-    #@chkvoidmethod
+    @chkvoidmethod
     def __iadd__(self, other):
         if isinstance(other, myclArray) and not self.shape == other.shape:
             if self.size<2 and other.size>2:
@@ -324,7 +321,7 @@ class myclArray(clarray.Array):
             res = clarray.Array.__iadd__(self, other)
             return res
 
-    #@chkmethod
+    @chkmethod
     def __mul__(self, other):
         if isinstance(other, myclArray):
             if self.size==1 and other.size>2:
@@ -368,6 +365,7 @@ class myclArray(clarray.Array):
         res = _res#myclArray(queue, self.shape, _res.dtype, data=_res.data)
         return res
 
+    @chkvoidmethod
     def __imul__(self, other):
         if isinstance(other, myclArray):
             if self.size==1 and other.size>2:
@@ -665,12 +663,6 @@ def abs(*args, **kwargs):
 def empty(shape, dtype=np.float32):
     #return arr_from_np( np.empty(*args, **kwargs) )
     return myclArray(queue, shape, dtype)
-
-
-#@chkfunc
-#def argmax(*args, **kwargs):
-#    return arr_from_np(np.argmax(*args, **kwargs))
-
 
 @chkfunc
 def square(a, out=None):

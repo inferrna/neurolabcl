@@ -133,6 +133,12 @@ class myclArray(clarray.Array):
             _res = empty(newshape, self.dtype)
             program.mislice(queue, (_res.size,), None, indices.data, self.data, _res.data)
             return _res
+        elif isinstance(index, myclArray) and self.ndim>0:
+            program = programs.getndbyids(self.dtype, index.dtype)
+            dims = (int(np.prod(self.shape[1:])), int(index.size),)
+            _res = empty((index.size,) + self.shape[1:], self.dtype)
+            program.getbyids(queue, dims, None, index.data, self.data, _res.data)
+            return _res
         else:
             _res = clarray.Array.__getitem__(self, index)
         if not isinstance(_res, myclArray):
@@ -318,7 +324,7 @@ class myclArray(clarray.Array):
             res = clarray.Array.__iadd__(self, other)
             return res
 
-    @chkmethod
+    #@chkmethod
     def __mul__(self, other):
         if isinstance(other, myclArray):
             if self.size==1 and other.size>2:
@@ -704,9 +710,12 @@ def argsort(a):
     arng = get_arng(a.size)#clarray.arange(queue, 0, a.size, 1, dtype=np.int32)
     prg = programs.argsort(a.dtype)
     #print(arng, a)
-    ret = prg(a, arng, key_bits=32)
+    res = prg(a, arng, key_bits=32)[0][1]
+    if not isinstance(res, myclArray):
+        res.__class__ = myclArray
+        res.reinit()
     #print(ret)
-    return ret[0][1]
+    return res
 
 
 def sum(a, axis=None, dtype=None, out=None, prg2load=programs.sum):

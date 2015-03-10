@@ -1,6 +1,7 @@
 slicedefs = """
 #define dtype {0}
-#define PC {1} //Dimensions count
+#define idtype {1}
+#define PC {2} //Dimensions count
 """
 norecslicesrc = """
 uint slice{0}(uint id, __global int4 *params, const uint c)<%
@@ -62,16 +63,15 @@ __kernel void mislicesingle(__global int4 *params, __global dtype *data, __globa
 }
 """
 getbyidssrc = """
-__kernel void mislice(__global size_t *params, __global dtype *data, __global dtype *result){1
+__kernel void getbyids(__global idtype *ids, __global dtype *data, __global dtype *result){
     size_t gid0 = get_global_id(0);  //Addr inside block
     size_t gs0 = get_global_size(0); //Block size  
     size_t gid1 = get_global_id(1);  //Block addr in result array
-    size_t idx = params[gid1];       //Block addr in source data
+    size_t idx = ids[gid1];       //Block addr in source data
     size_t didx = idx*gs0+gid0;      //Addr in source data
     size_t ridx = gid1*gs0+gid0;     //Addr in result array
-    result[ridx] = data[didx];
-
-
+    dtype res = data[didx];
+    result[ridx] = res; 
 }
 """
 

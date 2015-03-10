@@ -35,7 +35,7 @@ class programs():
                 slicesrcl = [clsrc.norecslicesrc.format("", "//", 0, nds)]
 
             slicesrc = "\n".join(slicesrcl).replace("<%", "{").replace("%>", "}")+"\n"
-            ksource = clsrc.slicedefs.format(typemaps[dtype.name], ndim) + slicesrc + clsrc.slicesetsrc
+            ksource = clsrc.slicedefs.format(typemaps[dtype.name], 0, ndim) + slicesrc + clsrc.slicesetsrc
             programcache[key] = cl.Program(self.ctx, ksource).build()
         return programcache[key]
 
@@ -52,7 +52,7 @@ class programs():
             else:
                 slicesrcl = [clsrc.norecslicesrc.format("", "//", 0, nds)]
             slicesrc = "\n".join(slicesrcl).replace("<%", "{").replace("%>", "}")+"\n"
-            ksource = clsrc.slicedefs.format(typemaps[dtype.name], ndim) + slicesrc + clsrc.slicegetsrc
+            ksource = clsrc.slicedefs.format(typemaps[dtype.name], 0, ndim) + slicesrc + clsrc.slicegetsrc
             programcache[key] = cl.Program(self.ctx, ksource).build()
         return programcache[key]
 
@@ -66,7 +66,7 @@ class programs():
                         [clsrc.findposnorecsrc.format(nds, "//", 0, 0)]
             findpsrcl.reverse()
             findpsrc = "\n".join(findpsrcl).replace("<%", "{").replace("%>", "}")+"\n"
-            ksource = clsrc.slicedefs.format(typemaps[dtype.name], ndim) + findpsrc + clsrc.transpsrc
+            ksource = clsrc.slicedefs.format(typemaps[dtype.name], 0, ndim) + findpsrc + clsrc.transpsrc
             programcache[key] = cl.Program(self.ctx, ksource).build()
         return programcache[key]
 
@@ -74,7 +74,7 @@ class programs():
         key = args+('sum',)
         if not key in programcache.keys():
             dtype, nsum = args
-            ksource = clsrc.slicedefs.format(typemaps[dtype.name], nsum) + clsrc.sumsrc
+            ksource = clsrc.slicedefs.format(typemaps[dtype.name], 0, nsum) + clsrc.sumsrc
             #print(ksource)
             programcache[key] = cl.Program(self.ctx, ksource).build()
         return programcache[key]
@@ -82,14 +82,14 @@ class programs():
         key = args+('min',)
         if not key in programcache.keys():
             dtype, nsum = args
-            ksource = clsrc.slicedefs.format(typemaps[dtype.name], nsum) + clsrc.minsrc
+            ksource = clsrc.slicedefs.format(typemaps[dtype.name], 0, nsum) + clsrc.minsrc
             programcache[key] = cl.Program(self.ctx, ksource).build()
         return programcache[key]
     def max(self, *args):
         key = args+('max',)
         if not key in programcache.keys():
             dtype, nsum  = args
-            ksource = clsrc.slicedefs.format(typemaps[dtype.name], nsum) + clsrc.maxsrc
+            ksource = clsrc.slicedefs.format(typemaps[dtype.name], 0, nsum) + clsrc.maxsrc
             programcache[key] = cl.Program(self.ctx, ksource).build()
         return programcache[key]
 
@@ -97,7 +97,7 @@ class programs():
         key = args+('ndsms',)
         if not key in programcache.keys():
             dtype = args[0]
-            ksource = clsrc.slicedefs.format(typemaps[dtype.name], 0) +\
+            ksource = clsrc.slicedefs.format(typemaps[dtype.name], 0, 0) +\
                                                    clsrc.ndsumsrc +\
                                                    clsrc.ndmulsrc +\
                                                    clsrc.ndsubsrc
@@ -108,11 +108,18 @@ class programs():
         key = args+('ndrsms',)
         if not key in programcache.keys():
             dtype, N = args
-            ksource = clsrc.slicedefs.format(typemaps[dtype.name], N) +\
+            ksource = clsrc.slicedefs.format(typemaps[dtype.name], 0, N) +\
                                                    clsrc.ndrsumsrc +\
                                                    clsrc.ndrmulsrc +\
                                                    clsrc.ndrsubsrc
-            print(ksource)
+            #print(ksource)
+            programcache[key] = cl.Program(self.ctx, ksource).build()
+        return programcache[key]
+
+    def getndbyids(self, dtype, idtype):
+        key = (dtype, idtype, 'getndbyids',)
+        if not key in programcache.keys():
+            ksource = clsrc.slicedefs.format(typemaps[dtype.name], typemaps[idtype.name], 0) + clsrc.getbyidssrc
             programcache[key] = cl.Program(self.ctx, ksource).build()
         return programcache[key]
 
@@ -120,7 +127,7 @@ class programs():
         key = args+('singlesms',)
         if not key in programcache.keys():
             dtype = args[0]
-            ksource = clsrc.slicedefs.format(typemaps[dtype.name], 0) +\
+            ksource = clsrc.slicedefs.format(typemaps[dtype.name], 0, 0) +\
                                                    clsrc.singlesumsrc +\
                                                    clsrc.singlemulsrc +\
                                                    clsrc.singlesubsrc +\
@@ -140,6 +147,6 @@ class programs():
         key = args+('dot',)
         if not key in programcache.keys():
             dtype, nums = args
-            ksource = clsrc.slicedefs.format(typemaps[dtype.name], nums) + clsrc.smalldotsrc;
+            ksource = clsrc.slicedefs.format(typemaps[dtype.name], 0, nums) + clsrc.smalldotsrc;
             programcache[key] = cl.Program(self.ctx, ksource).build()
         return programcache[key]

@@ -23,7 +23,7 @@ class myBuffer(cl._cl.Buffer):
     def __init__(self, *args, **kwargs):
         cl._cl.Buffer.__init__(self, *args, **kwargs)
         self.nowners = 0
-    @justtime
+    #@justtime
     def __del__(self):
         self.nowners -= 1
         if self.nowners == 0:
@@ -35,7 +35,7 @@ class myclArray(clarray.Array):
         clarray.Array.__init__(self, *args, **kwargs)
         self.reinit()
 
-    @justtime
+    #@justtime
     def reinit(self):
         self.ndim = len(self.shape)
 #TODO rewrite inner operators to support boolean array as parameter
@@ -48,37 +48,37 @@ class myclArray(clarray.Array):
         else:
             self.base_data.nowners += 1
 
-    @justtime
+    #@justtime
     def __lt__(self, other):
         result = clarray.Array.__lt__(self, other)
         result.is_boolean = True
         return result
-    @justtime
+    #@justtime
     def __le__(self, other):
         result = clarray.Array.__le__(self, other)
         result.is_boolean = True
         return result
-    @justtime
+    #@justtime
     def __eq__(self, other):
         result = clarray.Array.__eq__(self, other)
         result.is_boolean = True
         return result
-    @justtime
+    #@justtime
     def __ne__(self, other):
         result = clarray.Array.__ne__(self, other)
         result.is_boolean = True
         return result
-    @justtime
+    #@justtime
     def __ge__(self, other):
         result = clarray.Array.__ge__(self, other)
         result.is_boolean = True
         return result
-    @justtime
+    #@justtime
     def __gt__(self, other):
         result = clarray.Array.__gt__(self, other)
         result.is_boolean = True
         return result
-    @justtime
+    #@justtime
     def __del__(self):
         self.base_data.nowners -=1
         if self.base_data.nowners == 0:
@@ -86,7 +86,7 @@ class myclArray(clarray.Array):
             self.base_data.release()
         
 
-    @chkmethod
+    #@chkmethod
     def reshape(self, *shape, **kwargs):
         _res = clarray.Array.reshape(self, *shape, **kwargs)
         if not isinstance(_res, myclArray):
@@ -119,7 +119,7 @@ class myclArray(clarray.Array):
         indices = arr_from_np(npindices)
         return indices, newshape
 
-    @chkmethod
+    #@chkmethod
     def __getitem__(self, index):
         if isinstance(index, myclArray) and index.is_boolean == True:
             x, y, z = algorithm.copy_if(self.reshape((self.size,)), "index[i]!=0", [("index", index.reshape((index.size,)))])
@@ -143,7 +143,7 @@ class myclArray(clarray.Array):
             _res.reinit()
         return _res
 
-    @chkmethod
+    #@chkmethod
     def transpose(self, *args):
         replaces = np.array(args, dtype=np.uint32)
         olddims = np.array(self.shape, dtype=np.uint32)
@@ -157,7 +157,7 @@ class myclArray(clarray.Array):
         return result
 
 
-    @chkvoidmethod
+    #@chkvoidmethod
     def __setitem__(self, subscript, _value):
         if isinstance(_value, myclArray) or 'myclArray' in str(type(_value)):
             value = _value
@@ -188,7 +188,7 @@ class myclArray(clarray.Array):
             clarray.Array.setitem(self, subscript, value, queue=queue)
         #return self
 
-    @chkmethod
+    #@chkmethod
     def __sub__(self, other):
         if isinstance(other, myclArray) and not self.shape == other.shape:
             if self.size == 1 and other.size>2:
@@ -234,7 +234,7 @@ class myclArray(clarray.Array):
         res = _res#myclArray(queue, self.shape, _res.dtype, data=_res.data)
         return res
 
-    @chkmethod
+    #@chkmethod
     def __add__(self, other):
         if isinstance(other, myclArray) and not self.shape == other.shape:
             if self.size<2 and other.size>2:
@@ -280,7 +280,7 @@ class myclArray(clarray.Array):
         res = _res#myclArray(queue, self.shape, _res.dtype, data=_res.data)
         return res
 
-    @chkvoidmethod
+    #@chkvoidmethod
     def __iadd__(self, other):
         if isinstance(other, myclArray) and not self.shape == other.shape:
             if self.size<2 and other.size>2:
@@ -321,7 +321,7 @@ class myclArray(clarray.Array):
             res = clarray.Array.__iadd__(self, other)
             return res
 
-    @chkmethod
+    #@chkmethod
     def __mul__(self, other):
         if isinstance(other, myclArray):
             if self.size==1 and other.size>2:
@@ -365,7 +365,7 @@ class myclArray(clarray.Array):
         res = _res#myclArray(queue, self.shape, _res.dtype, data=_res.data)
         return res
 
-    @chkvoidmethod
+    #@chkvoidmethod
     def __imul__(self, other):
         if isinstance(other, myclArray):
             if self.size==1 and other.size>2:
@@ -408,7 +408,7 @@ class myclArray(clarray.Array):
             res.reinit()
         return res
 
-    @chkmethod
+    #@chkmethod
     def max(*args, **kwargs):
         a = args[0]
         if a.ndim==0 or not 'axis' in kwargs.keys():
@@ -421,7 +421,7 @@ class myclArray(clarray.Array):
             kwargs['prg2load'] = programs.max
             return sum(*args, **kwargs)
 
-    @chkmethod
+    #@chkmethod
     def min(*args, **kwargs):
         a = args[0]
         if a.ndim==0 or not 'axis' in kwargs.keys():
@@ -434,7 +434,7 @@ class myclArray(clarray.Array):
             kwargs['prg2load'] = programs.min
             return sum(*args, **kwargs)
 
-    @chkmethod
+    #@chkmethod
     def sum(*args, **kwargs):
         a = args[0]
         if a.ndim==0 or not 'axis' in kwargs.keys():
@@ -447,7 +447,7 @@ class myclArray(clarray.Array):
             kwargs['prg2load'] = programs.sum
             return sum(*args, **kwargs)
 
-    @chkmethod
+    #@chkmethod
     def flatten(self):
         return self.ravel()
 
@@ -495,12 +495,12 @@ def arr_from_np(nparr):
 
 random = myrandom()
 
-#@chkfunc
+##@chkfunc
 #def argmin(*args, **kwargs):
 #    return arr_from_np(np.argmin(*args, **kwargs))
 
 
-@chkfunc
+#@chkfunc
 def concatenate(arrays, axis=0):
     _res = clarray.concatenate(arrays, axis, queue)#np.concatenate(*args, **kwargs)
     _res.__class__ = myclArray
@@ -508,7 +508,7 @@ def concatenate(arrays, axis=0):
     res.reinit()
     return res
 
-@chkfunc
+#@chkfunc
 def dot(a, b, out=None):
     assert a.shape[-1] == b.size, "Sizes does not match, {0} vs {1}".format(a.shape[-1], b.size)
     prg = programs.dot(a.dtype, a.shape[-1])
@@ -524,7 +524,7 @@ def dot(a, b, out=None):
     return res
     
 
-@chkfunc
+#@chkfunc
 def floor(a, out=None):
     #TODO: work with out
     _res = clmath.floor(a, queue=queue) #np.floor(*args, **kwargs)
@@ -534,7 +534,7 @@ def floor(a, out=None):
     return res
 
 
-@chkfunc
+#@chkfunc
 def isneginf(a, out=None):
     if out:
         run.isneginf(queue, (a.size,), None, a.data, out.data)
@@ -549,19 +549,19 @@ def isneginf(a, out=None):
     #return np.isneginf(*args, **kwargs)
 
 
-@chkfunc
+#@chkfunc
 def ones_like(a, dtype=np.float32, order='K', subok=True):
     res = empty(a.shape, dtype=(dtype or a.dtype))
     res.fill(1, queue=queue)
     return res
 
 
-@chkfunc
+#@chkfunc
 def row_stack(*args, **kwargs):
     return arr_from_np(np.row_stack(*args, **kwargs))
 
 
-@chkfunc
+#@chkfunc
 def tanh(a, out=None):
     #TODO: work with out
     _res = clmath.tanh(a, queue=queue) #np.tanh(*args, **kwargs)
@@ -571,13 +571,13 @@ def tanh(a, out=None):
     return res
 
 
-@chkfunc
+#@chkfunc
 def all(a, axis=None, out=None, keepdims=False):
     #TODO: work with axis, out, keepdims
     return a.all(queue=queue) #np.all(*args, **kwargs)
 
 
-@chkfunc
+#@chkfunc
 def asfarray(a, dtype=np.float32):
     if isinstance(a, myclArray):
         return a.astype(dtype, queue=queue)
@@ -585,7 +585,7 @@ def asfarray(a, dtype=np.float32):
         return array(a, dtype=dtype)
 
 
-@chkfunc
+#@chkfunc
 def exp(a, out=None):
     #TODO: work with out
     _res = clmath.exp(a, queue=queue) #np.exp(*args, **kwargs)
@@ -595,7 +595,7 @@ def exp(a, out=None):
     return res
 
 
-@chkfunc
+#@chkfunc
 def linspace(start, stop, num=50, endpoint=True, retstep=False, dtype=np.float32):
     #TODO: create native function
     if num<2: return array([start])
@@ -612,12 +612,12 @@ def linspace(start, stop, num=50, endpoint=True, retstep=False, dtype=np.float32
     return res
 
 
-@chkfunc
+#@chkfunc
 def min(a):
     return a.min()#np.min(*args, **kwargs)
 
 
-@chkfunc
+#@chkfunc
 def sqrt(a, out=None):
     #TODO: work with out
     _res = clmath.sqrt(a, queue=queue) #np.sqrt(*args, **kwargs)
@@ -631,7 +631,7 @@ def values(*args, **kwargs):
     return arr_from_np(np.values(*args, **kwargs))
 
 
-@chkfunc
+#@chkfunc
 def isinf(a, out=None):
     if out:
         run.isposinf(queue, (a.size,), None, a.data, out.data)
@@ -648,11 +648,11 @@ def isinf(a, out=None):
 def items(*args, **kwargs):
     return np.items(*args, **kwargs)
 
-@chkfunc
+#@chkfunc
 def max(a):
     return a.max()#np.max(*args, **kwargs)
 
-@chkfunc
+#@chkfunc
 def abs(*args, **kwargs):
     arr = args[0]
     if isinstance(arr, myclArray):
@@ -664,13 +664,13 @@ def empty(shape, dtype=np.float32):
     #return arr_from_np( np.empty(*args, **kwargs) )
     return myclArray(queue, shape, dtype)
 
-@chkfunc
+#@chkfunc
 def square(a, out=None):
     #TODO: work with out
     return a*a #np.square(*args, **kwargs)
 
 
-@chkfunc
+#@chkfunc
 def sign(a, out=None):
     if out:
         run.asign(queue, (a.size,), None, a.data, out.data)
@@ -684,7 +684,7 @@ def sign(a, out=None):
         return res
 
 
-@chkfunc
+#@chkfunc
 def zeros_like(a, dtype=None, order='K', subok=True):
     _res = clarray.zeros_like(a)
     _res.__class__ = myclArray
@@ -692,10 +692,10 @@ def zeros_like(a, dtype=None, order='K', subok=True):
     res.reinit()
     return res
 
-@chkfunc
+#@chkfunc
 def argmin(a):
     return argsort(a)[0]
-@chkfunc
+#@chkfunc
 def argmax(a):
     return argsort(a)[-1]
 def argsort(a):
@@ -735,7 +735,7 @@ def sum(a, axis=None, dtype=None, out=None, prg2load=programs.sum):
     program.misum(queue, (int(a.size//a.shape[axis]),), None, cltrresult, result.data)
     return result
 
-@chkfunc
+#@chkfunc
 def sin(arr):
     #TODO: work with axis, out, keepdims
     _res = clmath.sin(arr, queue=queue) #np.sum(*args, **kwargs)
@@ -745,14 +745,14 @@ def sin(arr):
     return res
 
 
-@chkfunc
+#@chkfunc
 def zeros(shape, dtype=np.float32, order='C'):
     res = clarray.zeros(queue, shape, dtype, order)
     res.__class__ = myclArray
     res.reinit()
     return res
 
-@chkfunc
+#@chkfunc
 def array(*args, **kwargs):
     if not 'dtype' in kwargs.keys():
         kwargs['dtype'] = np.float32

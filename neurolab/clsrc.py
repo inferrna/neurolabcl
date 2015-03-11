@@ -1,6 +1,6 @@
 slicedefs = """
-#define dtype {0}
-#define idtype {1}
+#define dtype {0} //Main datatype
+#define idtype {1} //Type for indexing
 #define PC {2} //Dimensions count
 """
 norecslicesrc = """

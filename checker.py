@@ -38,9 +38,9 @@ def convertinst(inst, varbls):
 def chkvoidmethod(func):
     npfunc = ndarray.__dict__[func.__name__]
     def wrapper(*args, **kw):
-        result = func(*args, **kw)
         newargs = convertinst(array.Array, args)
         npfunc(*newargs, **kw)
+        result = func(*args, **kw)
         npres = newargs[0] 
         clres = args[0].get()
         tst = False

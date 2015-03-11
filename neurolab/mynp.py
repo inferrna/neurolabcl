@@ -175,7 +175,11 @@ class myclArray(clarray.Array):
             elif value.size == 1:
                 program.mislicesingle(queue, (result.size,), None, indices.data, self.data, value.data)
         else:
-            clarray.Array.setitem(self, subscript, value, queue=queue)
+            try:
+                clarray.Array.setitem(self, subscript, value, queue=queue)
+            except:
+                print(subscript, value)
+                print([type(a) for a in [subscript, value]])
         #return self
 
     @chkmethod

@@ -76,23 +76,25 @@ __kernel void getbyids(__global idtype *ids, __global dtype *data, __global dtyp
 """
 
 signsrc = """
-__kernel void asign(__global float *inpt, __global float *outpt){
+__kernel void asign(__global dtype *inpt, __global dtype *outpt){
     uint gid = get_global_id(0);
-    float res = copysign(1, inpt[gid]);
+    dtype linpt = inpt[gid];
+    dtype res = copysign(1, linpt);
+    res = select(res, (dtype) 0, (uint)(linpt == (dtype)0));
     outpt[gid] = res; 
 }\n
 """
 isinfsrc = """
-__kernel void isposinf(__global float *inpt, __global uint *outpt){
+__kernel void isposinf(__global dtype *inpt, __global dtype *outpt){
     uint gid = get_global_id(0);
-    float val = inpt[gid];
-    float res = isinf(val);
+    dtype val = inpt[gid];
+    dtype res = isinf(val);
     outpt[gid] = res;
 }\n
-__kernel void isneginf(__global float *inpt, __global uint *outpt){
+__kernel void isneginf(__global float *inpt, __global dtype *outpt){
     uint gid = get_global_id(0);
-    float val = inpt[gid];
-    float res =  signbit(val) * isinf(val);
+    dtype val = inpt[gid];
+    dtype res =  signbit(val) * isinf(val);
     outpt[gid] = res;
 }\n
 """

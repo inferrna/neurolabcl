@@ -441,8 +441,6 @@ class myclArray(clarray.Array):
     def flatten(self):
         return self.ravel()
 
-run = cl.Program(ctx, clsrc.signsrc+clsrc.isinfsrc).build()
-
 #randomeer.uniform(queue, (10,2,), np.float32, a=-0.5, b=0.5)
 #np.random.uniform(-0.5, 0.5, (10, 2))
 
@@ -529,14 +527,15 @@ def floor(a, out=None):
 
 @chkfunc
 def isneginf(a, out=None):
+    program = programs.isinf(a.dtype)
     if out:
-        run.isneginf(queue, (a.size,), None, a.data, out.data)
+        program.isneginf(queue, (a.size,), None, a.data, out.data)
         out.is_boolean = True
         return out
     else:
         res = empty(a.shape, dtype=np.uint32)
         #res = clarray.empty_like(a)
-        run.isneginf(queue, (a.size,), None, a.data, res.data)
+        program.isneginf(queue, (a.size,), None, a.data, res.data)
         res.is_boolean = True
         return res
     #return np.isneginf(*args, **kwargs)
@@ -624,13 +623,14 @@ def values(*args, **kwargs):
 
 @chkfunc
 def isinf(a, out=None):
+    program = programs.isinf(a.dtype)
     if out:
-        run.isposinf(queue, (a.size,), None, a.data, out.data)
+        program.isposinf(queue, (a.size,), None, a.data, out.data)
         out.is_boolean = True
         return out
     else:
         res = empty(a.shape, dtype=np.uint32)
-        run.isposinf(queue, (a.size,), None, a.data, res.data)
+        program.isposinf(queue, (a.size,), None, a.data, res.data)
         res.is_boolean = True
         return res
     #return np.isinf(*args, **kwargs)
@@ -665,15 +665,16 @@ def square(a, out=None):
 
 @chkfunc
 def sign(a, out=None):
+    program = programs.sign(a.dtype)
     if out:
-        run.asign(queue, (a.size,), None, a.data, out.data)
-        return out1111111111111
+        program.asign(queue, (a.size,), None, a.data, out.data)
+        return out
     else:
         res = empty(a.shape, dtype=a.dtype)
         if not isinstance(res, myclArray):
             res.__class__ = myclArray
             res.reinit()
-        run.asign(queue, (a.size,), None, a.data, res.data)
+        program.asign(queue, (a.size,), None, a.data, res.data)
         return res
 
 

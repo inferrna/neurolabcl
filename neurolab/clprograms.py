@@ -78,6 +78,23 @@ class programs():
             #print(ksource)
             programcache[key] = cl.Program(self.ctx, ksource).build()
         return programcache[key]
+
+    def sign(self, dtype):
+        key = (dtype, 'sign',)
+        if not key in programcache.keys():
+            ksource = clsrc.slicedefs.format(typemaps[dtype.name], 0, 0) + clsrc.signsrc
+            #print(ksource)
+            programcache[key] = cl.Program(self.ctx, ksource).build()
+        return programcache[key]
+
+    def isinf(self, dtype):
+        key = (dtype, 'isinf',)
+        if not key in programcache.keys():
+            ksource = clsrc.slicedefs.format(typemaps[dtype.name], 0, 0) + clsrc.isinfsrc
+            #print(ksource)
+            programcache[key] = cl.Program(self.ctx, ksource).build()
+        return programcache[key]
+
     def min(self, *args):
         key = args+('min',)
         if not key in programcache.keys():

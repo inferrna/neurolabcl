@@ -697,12 +697,12 @@ def argmax(a):
     return argsort(a)[-1]
 #@chkfunc
 def argsort(a):
-    arng = get_arng(a.size, np.int32)#clarray.arange(queue, 0, a.size, 1, dtype=np.int32)
+    arng = get_arng(a.size, np.uint32)#clarray.arange(queue, 0, a.size, 1, dtype=np.int32)
     prg = programs.argsort(a.dtype)
-    res = prg(a, arng, key_bits=32)
-    #if not isinstance(res, myclArray):
-    #    res.__class__ = myclArray
-    #    res.reinit()
+    res = prg(a, arng, key_bits=32)[0][1]
+    if not isinstance(res, myclArray):
+        res.__class__ = myclArray
+        res.reinit()
     #print(ret)
     return res
 

@@ -264,6 +264,22 @@ __kernel void ndrsum(__global dtype *data, __global dtype *result, __global dtyp
 }
 """
 
+doubledotsrc = """
+__kernel void midot(__global dtype *data, __global dtype *gparam, __global dtype *result){
+    uint gid0 = get_global_id(0); //Addressing data
+    uint gid1 = get_global_id(1); //Adressing multiplier
+    uint gs0 = get_global_size(0);//Count of result elements in bank
+    uint sgd0 = gid0*PC;          //Data shift
+    uint sgd1 = gid1*PC;          //Multiplier shift
+    uint did = gid1*gs0 + gid0;   //Result address
+    dtype res = 0;
+    for(uint i=0; i<PC; i++){
+        res += data[sgd0+i] * gparam[sgd1+i];
+    }
+    result[did] = res;
+}
+"""
+
 smalldotsrc = """
 __kernel void midot(__global dtype *data, __global dtype *gparam, __global dtype *result){
     uint gid = get_global_id(0);

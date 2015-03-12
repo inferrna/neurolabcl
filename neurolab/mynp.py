@@ -17,8 +17,8 @@ mf = cl.mem_flags
 arngd = np.array([0])
 
 @justtime
-def get_arng(size):
-    return clarray.arange(queue, 0, size, 1, dtype=np.int32)
+def get_arng(size, dtype=np.int32):
+    return clarray.arange(queue, 0, size, 1, dtype=dtype)
 
 class myBuffer(cl._cl.Buffer):
     def __init__(self, *args, **kwargs):
@@ -695,15 +695,14 @@ def argmin(a):
 @chkfunc
 def argmax(a):
     return argsort(a)[-1]
-@chkfunc
+#@chkfunc
 def argsort(a):
-    arng = get_arng(a.size)#clarray.arange(queue, 0, a.size, 1, dtype=np.int32)
+    arng = get_arng(a.size, np.int32)#clarray.arange(queue, 0, a.size, 1, dtype=np.int32)
     prg = programs.argsort(a.dtype)
-    #print(arng, a)
-    res = prg(a, arng, key_bits=32)[0][1]
-    if not isinstance(res, myclArray):
-        res.__class__ = myclArray
-        res.reinit()
+    res = prg(a, arng, key_bits=32)
+    #if not isinstance(res, myclArray):
+    #    res.__class__ = myclArray
+    #    res.reinit()
     #print(ret)
     return res
 

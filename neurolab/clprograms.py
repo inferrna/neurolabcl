@@ -152,13 +152,12 @@ class programs():
             programcache[key] = cl.Program(self.ctx, ksource).build()
         return programcache[key]
 
-    def argsort(self, *args):
-         key = args+('argsort',)
-         if not key in programcache.keys():
-             dtype = args[0]
-             programcache[key] = cl.algorithm.RadixSort(self.ctx, typemaps[dtype.name]+" *mkey, unsigned int *tosort",\
-                                                                          "mkey[i]", ["mkey", "tosort"])
-         return programcache[key]
+    def argsort(self, dtype):
+        key = (dtype, 'argsort',)
+        if not key in programcache.keys():
+            programcache[key] = cl.algorithm.RadixSort(self.ctx, typemaps[dtype.name]+" *mkey, int *tosort",\
+                                                                         "mkey[i]", ["mkey", "tosort"])
+        return programcache[key]
 
     def dot(self, *args):
         key = args+('dot',)

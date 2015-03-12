@@ -699,7 +699,7 @@ def argmax(a):
 def argsort(a):
     arng = get_arng(a.size, np.uint32)#clarray.arange(queue, 0, a.size, 1, dtype=np.int32)
     prg = programs.argsort(a.dtype)
-    res = prg(a, arng, key_bits=32)[0][1]
+    res = prg(a, arng, key_bits=a.dtype.itemsize*8)[0][1]
     if not isinstance(res, myclArray):
         res.__class__ = myclArray
         res.reinit()

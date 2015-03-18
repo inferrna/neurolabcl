@@ -148,15 +148,18 @@ class myclArray(clarray.Array):
 
     @chkvoidmethod
     def __setitem__(self, subscript, _value):
-        if isinstance(_value, myclArray):
-            value = _value
-        elif type(_value) in (type(0.4), type(-1)):
-            value = arr_from_np(np.array([_value], dtype=self.dtype))
-        elif isinstance(_value, np.ndarray):
-            value = arr_from_np(_value).astype(self.dtype)
-        else:
-            assert True==False, "Can not determine value type in setitem of {0}".format(_value)
+        def fix_val(_vl):
+            if isinstance(_vl, myclArray):
+                val = _vl
+            elif type(_vl) in (int, float):
+                val = arr_from_np(np.array([_vl], dtype=self.dtype))
+            elif isinstance(_vl, np.ndarray):
+                val = arr_from_np(_vl).astype(self.dtype)
+            else:
+                assert True==False, "Can not determine value type in setitem of {0}".format(_value)
+            return val
         if isinstance(subscript, myclArray) and subscript.is_boolean == True:
+            value = fix_val(_value)
             idxcl = get_arng(self.size)#clarray.arange(queue, 0, self.size, 1, dtype=np.int32)
             x, y, z = algorithm.copy_if(idxcl, "index[i]!=0", [("index", subscript.reshape((subscript.size,)))])
             if y:
@@ -165,6 +168,7 @@ class myclArray(clarray.Array):
         #elif isinstance(subscript, myclArray) and subscript.ndim > 1:
         #    clarray.Array.setitem(self.reshape(self.size), subscript.reshape(subscript.size), value, queue=queue)
         elif isinstance(subscript, tuple) or isinstance(subscript, slice):
+            value = fix_val(_value)
             indices, newshape = self.createshapes(subscript)
             program = programs.sliceset(self.dtype, len(self.shape))
             result = empty(newshape, self.dtype)
@@ -174,12 +178,16 @@ class myclArray(clarray.Array):
                 program.mislice(queue, (result.size,), None, indices.data, self.data, value.data)
             elif value.size == 1:
                 program.mislicesingle(queue, (result.size,), None, indices.data, self.data, value.data)
+        elif isinstance(_value, myclArray) and type(subscript) == int and self.shape[-_value.ndim:] == _value.shape:
+            count = np.prod(self.shape[-_value.ndim:])
+            s1 = count*subscript
+            s2 = count*(subscript+1)
+            self.reshape(self.size)[s1:s2] = _value.reshape(_value.size)
         else:
             try:
-                clarray.Array.setitem(self, subscript, value, queue=queue)
+                clarray.Array.setitem(self, subscript, _value, queue=queue)
             except:
-                print(subscript, value)
-                print([type(a) for a in [subscript, value]])
+                assert False==True, "Can not set array {0} by value {1} on [psition {2}".format(self, _value, subscript)
         #return self
 
     @chkmethod

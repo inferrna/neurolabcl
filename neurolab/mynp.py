@@ -89,14 +89,17 @@ class myclArray(clarray.Array):
     def createshapes(self, index):
         if isinstance(index, slice):
             index = (index,)
-        def getslice(x, a):
-            if isinstance(x, slice):
+        def getslice(_x, a):
+            if isinstance(_x, slice):
+                x = slice(int(_x.start) if isinstance(_x.start, float) else _x.start,\
+                          int(_x.stop)  if isinstance(_x.stop,  float) else _x.stop,\
+                          int(_x.step)  if isinstance(_x.step,  float) else _x.step)
                 if x.step and x.step<0:
                     return slice(x.start, x.stop, -x.step).indices(a)[:2]+(x.step,)
                 else:
                     return x.indices(a)
-            elif isinstance(x, int):
-                return slice(x, x+1).indices(a)
+            elif isinstance(_x, int):
+                return slice(_x, _x+1).indices(a)
         dl = len(self.shape) - len(index)
         #Extend index to shape size if less.
         for i in range(0, dl):
@@ -182,6 +185,7 @@ class myclArray(clarray.Array):
             count = np.prod(self.shape[-_value.ndim:])
             s1 = count*subscript
             s2 = count*(subscript+1)
+            #print(subscript, count, s1, s2)
             self.reshape(self.size)[s1:s2] = _value.reshape(_value.size)
         else:
             try:
@@ -703,7 +707,7 @@ def argmin(a):
 @chkfunc
 def argmax(a):
     return argsort(a)[-1]
-#@chkfunc
+@chkfunc
 def argsort(a):
     arng = get_arng(a.size, np.uint32)#clarray.arange(queue, 0, a.size, 1, dtype=np.int32)
     prg = programs.argsort(a.dtype)

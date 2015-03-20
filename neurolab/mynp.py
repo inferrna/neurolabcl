@@ -425,7 +425,7 @@ class myclArray(clarray.Array):
             return res
         else:
             kwargs['prg2load'] = programs.max
-            return sum(*args, **kwargs)
+            return _sum(*args, **kwargs)
 
     @chkmethod
     def min(*args, **kwargs):
@@ -438,7 +438,7 @@ class myclArray(clarray.Array):
             return res
         else:
             kwargs['prg2load'] = programs.min
-            return sum(*args, **kwargs)
+            return _sum(*args, **kwargs)
 
     @chkmethod
     def sum(*args, **kwargs):
@@ -451,7 +451,7 @@ class myclArray(clarray.Array):
             return res
         else:
             kwargs['prg2load'] = programs.sum
-            return sum(*args, **kwargs)
+            return _sum(*args, **kwargs)
 
     @justtime        
     def flatten(self):
@@ -719,8 +719,13 @@ def argsort(a):
     return res
 
 
+@chkfunc
+def sum(*args, **kwargs):
+    kwargs['prg2load'] = programs.sum
+    return _sum(*args, **kwargs)
+
 @justtime
-def sum(a, axis=None, dtype=None, out=None, prg2load=programs.sum):
+def _sum(a, axis=None, dtype=None, out=None, prg2load=programs.sum):
     #Transpose first to shift target axis to the end
     #do not transpose if axis already is the end
     if axis==None:

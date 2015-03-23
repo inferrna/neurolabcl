@@ -1,6 +1,7 @@
 import clsrc
 import pyopencl as cl
 import numpy as np
+from mako.template import Template
 
 programcache = {}
 
@@ -16,6 +17,20 @@ np.uint64.__name__:  "ulong",
 np.float16.__name__: "half",
 np.float32.__name__: "float",
 np.float64.__name__: "double"}
+
+operators = {
+    'sub': '-',
+    'add': '+',
+    'mul': '*',
+    'div': '/',
+    'ge':  '>=',
+    'le':  '<=',
+    'eq':  '==',
+    'ne':  '!=',
+    'lt':  '<',
+    'gt':  '>'
+}
+
 
 class programs():
     def __init__(self, context):
@@ -113,23 +128,30 @@ class programs():
     def ndsms(self, *args):
         key = args+('ndsms',)
         if not key in programcache.keys():
-            dtype = args[0]
-            ksource = clsrc.slicedefs.format(typemaps[dtype.name], 0, 0) +\
-                                                   clsrc.ndsumsrc +\
-                                                   clsrc.ndmulsrc +\
-                                                   clsrc.ndsubsrc
+            dtype, action = args
+            dtypecl = typemaps[dtype.name]
+            if action in ('lt', 'gt', 'le', 'ge', 'eq', 'ne',):
+                idtypecl = 'char'
+            else:
+                idtypecl = dtypecl
+            operator = operators[action]
+            ksourcetpl = Template(clsrc.slicedefs.format(dtypecl, idtypecl, 0) + clsrc.ndsrc)
+            ksource = ksourcetpl.render(action=action, operator=operator, idtype=idtypecl)
             programcache[key] = cl.Program(self.ctx, ksource).build()
         return programcache[key]
 
     def ndrsms(self, *args):
         key = args+('ndrsms',)
         if not key in programcache.keys():
-            dtype, N = args
-            ksource = clsrc.slicedefs.format(typemaps[dtype.name], 0, N) +\
-                                                   clsrc.ndrsumsrc +\
-                                                   clsrc.ndrmulsrc +\
-                                                   clsrc.ndrsubsrc
-            #print(ksource)
+            dtype, N, action = args
+            dtypecl = typemaps[dtype.name]
+            if action in ('lt', 'gt', 'le', 'ge', 'eq', 'ne',):
+                idtypecl = 'char'
+            else:
+                idtypecl = dtypecl
+            operator = operators[action]
+            ksourcetpl = Template(clsrc.slicedefs.format(dtypecl, idtypecl, N) + clsrc.ndrsrc)
+            ksource = ksourcetpl.render(action=action, operator=operator, idtype=idtypecl)
             programcache[key] = cl.Program(self.ctx, ksource).build()
         return programcache[key]
 

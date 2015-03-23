@@ -30,6 +30,15 @@ class myBuffer(cl._cl.Buffer):
             #print("released", self.size, "bytes directly")
             self.release()
 
+flllbacks = {
+    'isub': clarray.Array.__isub__,
+    'sub':  clarray.Array.__sub__,
+    'iadd': clarray.Array.__iadd__,
+    'add':  clarray.Array.__add__,
+    'imul': clarray.Array.__imul__,
+    'mul':  clarray.Array.__mul__,
+}
+
         
 def meta_add(self, other,\
                    # Original method, eg clarray.Array.__add__
@@ -244,72 +253,72 @@ class myclArray(clarray.Array):
     @chkmethod
     def __sub__(self, other):
         singleprogram = programs.singlesms(self.dtype).misinglenegsub
-        ndprogram = programs.ndsms(self.dtype).ndsub
+        ndprogram = programs.ndsms(self.dtype, 'sub').ndsub
         ndrprogram = None
         if isinstance(other, myclArray):
             if self.shape[:other.ndim] == other.shape:
                 N = np.prod(self.shape[other.ndim:])
-                ndrprogram = programs.ndrsms(self.dtype, N).ndrsub
+                ndrprogram = programs.ndrsms(self.dtype, N, 'sub').ndrsub
         fallback = clarray.Array.__sub__
         return meta_add(self, other, fallback, singleprogram, ndprogram, ndrprogram)
 
     @chkvoidmethod
     def __isub__(self, other):
         singleprogram = programs.singlesms(self.dtype).misinglenegsub
-        ndprogram = programs.ndsms(self.dtype).ndsub
+        ndprogram = programs.ndsms(self.dtype, 'sub').ndsub
         ndrprogram = None
         if isinstance(other, myclArray):
             if self.shape[:other.ndim] == other.shape:
                 N = np.prod(self.shape[other.ndim:])
-                ndrprogram = programs.ndrsms(self.dtype, N).ndrsub
+                ndrprogram = programs.ndrsms(self.dtype, N, 'sub').ndrsub
         fallback = clarray.Array.__isub__
         return meta_add(self, other, fallback, singleprogram, ndprogram, ndrprogram, result=self)
 
     @chkmethod
     def __add__(self, other):
         singleprogram = programs.singlesms(self.dtype).misinglesum
-        ndprogram = programs.ndsms(self.dtype).ndsum
+        ndprogram = programs.ndsms(self.dtype, 'add').ndadd
         ndrprogram = None
         if isinstance(other, myclArray):
             if self.shape[:other.ndim] == other.shape:
                 N = np.prod(self.shape[other.ndim:])
-                ndrprogram = programs.ndrsms(self.dtype, N).ndrsum
+                ndrprogram = programs.ndrsms(self.dtype, N, 'add').ndradd
         fallback = clarray.Array.__add__
         return meta_add(self, other, fallback, singleprogram, ndprogram, ndrprogram)
 
     @chkvoidmethod
     def __iadd__(self, other):
         singleprogram = programs.singlesms(self.dtype).misinglesum
-        ndprogram = programs.ndsms(self.dtype).ndsum
+        ndprogram = programs.ndsms(self.dtype, 'add').ndadd
         ndrprogram = None
         if isinstance(other, myclArray):
             if self.shape[:other.ndim] == other.shape:
                 N = np.prod(self.shape[other.ndim:])
-                ndrprogram = programs.ndrsms(self.dtype, N).ndrsum
+                ndrprogram = programs.ndrsms(self.dtype, N, 'add').ndradd
         fallback = clarray.Array.__iadd__
         return meta_add(self, other, fallback, singleprogram, ndprogram, ndrprogram, result=self)
 
     @chkmethod
     def __mul__(self, other):
         singleprogram = programs.singlesms(self.dtype).misinglemul
-        ndprogram = programs.ndsms(self.dtype).ndmul
+        ndprogram = programs.ndsms(self.dtype, 'mul').ndmul
         ndrprogram = None
         if isinstance(other, myclArray):
             if self.shape[:other.ndim] == other.shape:
                 N = np.prod(self.shape[other.ndim:])
-                ndrprogram = programs.ndrsms(self.dtype, N).ndrmul
+                ndrprogram = programs.ndrsms(self.dtype, N, 'mul').ndrmul
         fallback = clarray.Array.__mul__
         return meta_add(self, other, fallback, singleprogram, ndprogram, ndrprogram)
 
     @chkvoidmethod
     def __imul__(self, other):
         singleprogram = programs.singlesms(self.dtype).misinglemul
-        ndprogram = programs.ndsms(self.dtype).ndmul
+        ndprogram = programs.ndsms(self.dtype, 'mul').ndmul
         ndrprogram = None
         if isinstance(other, myclArray):
             if self.shape[:other.ndim] == other.shape:
                 N = np.prod(self.shape[other.ndim:])
-                ndrprogram = programs.ndrsms(self.dtype, N).ndrmul
+                ndrprogram = programs.ndrsms(self.dtype, N, 'mul').ndrmul
         fallback = clarray.Array.__imul__
         return meta_add(self, other, fallback, singleprogram, ndprogram, ndrprogram, result=self)
 

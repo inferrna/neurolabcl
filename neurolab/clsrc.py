@@ -215,52 +215,20 @@ __kernel void misinglesub(__global dtype *data, __global dtype *result, __global
     result[gid] = data[gid] - param;
 }
 """
-ndsubsrc = """
-__kernel void ndsub(__global dtype *data, __global dtype *result, __global dtype *gparam){
+ndsrc = """
+__kernel void nd${action}(__global dtype *data, __global idtype *result, __global dtype *gparam){
     uint gid0 = get_global_id(0);
     uint gid1 = get_global_id(1);
     uint gs1 = get_global_size(1);
     uint did = gid0*gs1 + gid1;
-    result[did] = data[did] - gparam[gid1];
+    result[did] = (${idtype}) (data[did] ${operator} gparam[gid1]);
 }
 """
-ndmulsrc = """
-__kernel void ndmul(__global dtype *data, __global dtype *result, __global dtype *gparam){
-    uint gid0 = get_global_id(0);
-    uint gid1 = get_global_id(1);
-    uint gs1 = get_global_size(1);
-    uint did = gid0*gs1 + gid1;
-    result[did] = data[did] * gparam[gid1];
-}
-"""
-ndsumsrc = """
-__kernel void ndsum(__global dtype *data, __global dtype *result, __global dtype *gparam){
-    uint gid0 = get_global_id(0);
-    uint gid1 = get_global_id(1);
-    uint gs1 = get_global_size(1);
-    uint did = gid0*gs1 + gid1;
-    result[did] = data[did] + gparam[gid1];
-}
-"""
-ndrsubsrc = """
-__kernel void ndrsub(__global dtype *data, __global dtype *result, __global dtype *gparam){
+ndrsrc = """
+__kernel void ndr${action}(__global dtype *data, __global idtype *result, __global dtype *gparam){
     uint gid = get_global_id(0);
     uint did = gid/PC;
-    result[gid] = data[gid] - gparam[did];
-}
-"""
-ndrmulsrc = """
-__kernel void ndrmul(__global dtype *data, __global dtype *result, __global dtype *gparam){
-    uint gid = get_global_id(0);
-    uint did = gid/PC;
-    result[gid] = data[gid] * gparam[did];
-}
-"""
-ndrsumsrc = """
-__kernel void ndrsum(__global dtype *data, __global dtype *result, __global dtype *gparam){
-    uint gid = get_global_id(0);
-    uint did = gid/PC;
-    result[gid] = data[gid] + gparam[did];
+    result[gid] = (${idtype}) (data[gid] ${operator} gparam[did]);
 }
 """
 

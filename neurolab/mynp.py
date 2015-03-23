@@ -40,10 +40,8 @@ def meta_add(self, other,\
                    result=None):
     if isinstance(other, myclArray) and not self.shape == other.shape:
         if self.size == 1 and other.size>2:
-            if not result: result = empty(other.shape, self.dtype)
-            singleprogram(queue, (self.size,), None, other.data, result.data, self.data)
-            res = result
-        if other.size==1:
+            self, other = other, self
+        if other.size==1 and not other.offset:
             if not result: result = empty(self.shape, self.dtype)
             singleprogram(queue, (self.size,), None, self.data, result.data, other.data)
             res = result

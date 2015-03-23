@@ -291,89 +291,27 @@ class myclArray(clarray.Array):
 
     @chkmethod
     def __mul__(self, other):
+        singleprogram = programs.singlesms(self.dtype).misinglemul
+        ndprogram = programs.ndsms(self.dtype).ndmul
+        ndrprogram = None
         if isinstance(other, myclArray):
-            if self.size==1 and other.size>2:
-                self, other = other, self
-            if other.size == 1 and not other.offset:
-                program = programs.singlesms(self.dtype)
-                res = empty(self.shape, self.dtype)
-                program.misinglemul(queue, (res.size,), None, self.data, res.data, other.data)
-            elif other.size==1 and other.offset:
-                res = clarray.Array.__mul__(self, other.get()[0])
-            elif self.shape[-other.ndim:] == other.shape:
-                result = empty(self.shape, self.dtype)
-                program = programs.ndsms(self.dtype)
-                s1 = np.prod(self.shape[:-other.ndim])
-                s2 = np.prod(other.shape)
-                program.ndmul(queue,\
-                        tuple([int(s1), int(s2)]),\
-                        None,\
-                        self.data,\
-                        result.data,\
-                        other.data)
-                res = result
-            elif self.shape[:other.ndim] == other.shape:
-                result = empty(self.shape, self.dtype)
+            if self.shape[:other.ndim] == other.shape:
                 N = np.prod(self.shape[other.ndim:])
-                program = programs.ndrsms(self.dtype, N)
-                program.ndrmul(queue,\
-                        (self.size,),\
-                        None,\
-                        self.data,\
-                        result.data,\
-                        other.data)
-                res = result
-            else:
-                res = clarray.Array.__mul__(self, other.reshape(self.shape))
-        else:
-            res = clarray.Array.__mul__(self, other)
-        if not isinstance(res, myclArray):
-            res.__class__ = myclArray
-            res.reinit()
-        return res
+                ndrprogram = programs.ndrsms(self.dtype, N).ndrmul
+        fallback = clarray.Array.__mul__
+        return meta_add(self, other, fallback, singleprogram, ndprogram, ndrprogram)
 
     @chkvoidmethod
     def __imul__(self, other):
+        singleprogram = programs.singlesms(self.dtype).misinglemul
+        ndprogram = programs.ndsms(self.dtype).ndmul
+        ndrprogram = None
         if isinstance(other, myclArray):
-            if self.size==1 and other.size>2:
-                self, other = other, self
-            if other.size == 1 and not other.offset:
-                program = programs.singlesms(self.dtype)
-                program.misinglemul(queue, (self.size,), None, self.data, self.data, other.data)
-                return self
-            elif other.size==1 and other.offset:
-                res = clarray.Array.__imul__(self, other.get()[0])
-            elif self.shape[-other.ndim:] == other.shape:
-                result = empty(self.shape, self.dtype)
-                program = programs.ndsms(self.dtype)
-                s1 = np.prod(self.shape[:-other.ndim])
-                s2 = np.prod(other.shape)
-                program.ndmul(queue,\
-                        tuple([int(s1), int(s2)]),\
-                        None,\
-                        self.data,\
-                        self.data,\
-                        other.data)
-                res = self
-            elif self.shape[:other.ndim] == other.shape:
-                result = empty(self.shape, self.dtype)
+            if self.shape[:other.ndim] == other.shape:
                 N = np.prod(self.shape[other.ndim:])
-                program = programs.ndrsms(self.dtype, N)
-                program.ndrmul(queue,\
-                        (self.size,),\
-                        None,\
-                        self.data,\
-                        self.data,\
-                        other.data)
-                res = result
-            else:
-                res = clarray.Array.__imul__(self, other.reshape(self.shape))
-        else:
-            res = clarray.Array.__imul__(self, other)
-        if not isinstance(res, myclArray):
-            res.__class__ = myclArray
-            res.reinit()
-        return res
+                ndrprogram = programs.ndrsms(self.dtype, N).ndrmul
+        fallback = clarray.Array.__imul__
+        return meta_add(self, other, fallback, singleprogram, ndprogram, ndrprogram, result=self)
 
     @chkmethod
     def max(*args, **kwargs):

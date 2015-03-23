@@ -31,6 +31,12 @@ class myBuffer(cl._cl.Buffer):
             self.release()
 
 fallbacks = {
+    'lt': clarray.Array.__lt__,
+    'gt': clarray.Array.__gt__,
+    'le': clarray.Array.__le__,
+    'ge': clarray.Array.__ge__,
+    'eq': clarray.Array.__eq__,
+    'ne': clarray.Array.__ne__,
     'isub': clarray.Array.__isub__,
     'sub':  clarray.Array.__sub__,
     'iadd': clarray.Array.__iadd__,
@@ -111,27 +117,27 @@ class myclArray(clarray.Array):
             self.base_data.nowners += 1
 
     def __lt__(self, other):
-        result = clarray.Array.__lt__(self, other)
+        result = meta_add(self, other, ('lt',))
         result.is_boolean = True
         return result
     def __le__(self, other):
-        result = clarray.Array.__le__(self, other)
+        result = meta_add(self, other, ('le',))
         result.is_boolean = True
         return result
     def __eq__(self, other):
-        result = clarray.Array.__eq__(self, other)
+        result = meta_add(self, other, ('eq',))
         result.is_boolean = True
         return result
     def __ne__(self, other):
-        result = clarray.Array.__ne__(self, other)
+        result = meta_add(self, other, ('ne',))
         result.is_boolean = True
         return result
     def __ge__(self, other):
-        result = clarray.Array.__ge__(self, other)
+        result = meta_add(self, other, ('ge',))
         result.is_boolean = True
         return result
     def __gt__(self, other):
-        result = clarray.Array.__gt__(self, other)
+        result = meta_add(self, other, ('gt',))
         result.is_boolean = True
         return result
     def __del__(self):
@@ -139,6 +145,30 @@ class myclArray(clarray.Array):
         if self.base_data.nowners == 0:
             #print("released", self.base_data.size, "bytes")
             self.base_data.release()
+
+    @chkmethod
+    def __sub__(self, other):
+        return meta_add(self, other, ('sub',))
+
+    @chkvoidmethod
+    def __isub__(self, other):
+        return meta_add(self, other, ('i', 'sub',))
+
+    @chkmethod
+    def __add__(self, other):
+        return meta_add(self, other, ('add',))
+
+    @chkvoidmethod
+    def __iadd__(self, other):
+        return meta_add(self, other, ('i', 'add',))
+
+    @chkmethod
+    def __mul__(self, other):
+        return meta_add(self, other, ('mul', ))
+
+    @chkvoidmethod
+    def __imul__(self, other):
+        return meta_add(self, other, ('i', 'mul', ))
 
     @chkmethod
     def reshape(self, *shape, **kwargs):
@@ -257,29 +287,6 @@ class myclArray(clarray.Array):
                 assert False==True, "Can not set array {0} by value {1} on [psition {2}".format(self, _value, subscript)
         #return self
 
-    @chkmethod
-    def __sub__(self, other):
-        return meta_add(self, other, ('sub',))
-
-    @chkvoidmethod
-    def __isub__(self, other):
-        return meta_add(self, other, ('i', 'sub',))
-
-    @chkmethod
-    def __add__(self, other):
-        return meta_add(self, other, ('add',))
-
-    @chkvoidmethod
-    def __iadd__(self, other):
-        return meta_add(self, other, ('i', 'add',))
-
-    @chkmethod
-    def __mul__(self, other):
-        return meta_add(self, other, ('mul', ))
-
-    @chkvoidmethod
-    def __imul__(self, other):
-        return meta_add(self, other, ('i', 'mul', ))
 
     @chkmethod
     def max(*args, **kwargs):

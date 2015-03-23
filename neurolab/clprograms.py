@@ -165,12 +165,15 @@ class programs():
     def singlesms(self, *args):
         key = args+('singlesms',)
         if not key in programcache.keys():
-            dtype = args[0]
-            ksource = clsrc.slicedefs.format(typemaps[dtype.name], 0, 0) +\
-                                                   clsrc.singlesumsrc +\
-                                                   clsrc.singlemulsrc +\
-                                                   clsrc.singlesubsrc +\
-                                                   clsrc.singlenegsubsrc
+            dtype, action, neg = args
+            dtypecl = typemaps[dtype.name]
+            if action in ('lt', 'gt', 'le', 'ge', 'eq', 'ne',):
+                idtypecl = 'char'
+            else:
+                idtypecl = dtypecl
+            operator = operators[action]
+            ksourcetpl = Template(clsrc.slicedefs.format(dtypecl, idtypecl, 0) + clsrc.singlesrc)
+            ksource = ksourcetpl.render(action=action, operator=operator, idtype=idtypecl, neg=neg)
             programcache[key] = cl.Program(self.ctx, ksource).build()
         return programcache[key]
 

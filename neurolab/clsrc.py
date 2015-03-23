@@ -178,45 +178,18 @@ __kernel void misum(__global dtype *data, __global dtype *result){
     result[gid] = res;
 }
 """
-singlesumsrc = """
-__kernel void misinglesum(__global dtype *data, __global dtype *result, __global dtype *gparam){
+singlesrc = """
+__kernel void prg(__global dtype *data, __global idtype *result, __global dtype *gparam){
     uint gid = get_global_id(0);
     __local dtype param;
     if(get_local_id(0)==0) param = gparam[0];
     barrier(CLK_LOCAL_MEM_FENCE);
-    dtype res = data[gid] + param;
+    dtype res = (${idtype}) (${neg} data[gid] ${operator} param);
     result[gid] = res;
 }
 """
-singlemulsrc = """
-__kernel void misinglemul(__global dtype *data, __global dtype *result, __global dtype *gparam){
-    uint gid = get_global_id(0);
-    __local dtype param;
-    if(get_local_id(0)==0) param = gparam[0];
-    barrier(CLK_LOCAL_MEM_FENCE);
-    result[gid] = data[gid]*param;
-}
-"""
-singlenegsubsrc = """
-__kernel void misinglenegsub(__global dtype *data, __global dtype *result, __global dtype *gparam){
-    uint gid = get_global_id(0);
-    __local dtype param;
-    if(get_local_id(0)==0) param = gparam[0];
-    barrier(CLK_LOCAL_MEM_FENCE);
-    result[gid] = param - data[gid];
-}
-"""
-singlesubsrc = """
-__kernel void misinglesub(__global dtype *data, __global dtype *result, __global dtype *gparam){
-    uint gid = get_global_id(0);
-    __local dtype param;
-    if(get_local_id(0)==0) param = gparam[0];
-    barrier(CLK_LOCAL_MEM_FENCE);
-    result[gid] = data[gid] - param;
-}
-"""
 ndsrc = """
-__kernel void nd${action}(__global dtype *data, __global idtype *result, __global dtype *gparam){
+__kernel void prg(__global dtype *data, __global idtype *result, __global dtype *gparam){
     uint gid0 = get_global_id(0);
     uint gid1 = get_global_id(1);
     uint gs1 = get_global_size(1);
@@ -225,7 +198,7 @@ __kernel void nd${action}(__global dtype *data, __global idtype *result, __globa
 }
 """
 ndrsrc = """
-__kernel void ndr${action}(__global dtype *data, __global idtype *result, __global dtype *gparam){
+__kernel void prg(__global dtype *data, __global idtype *result, __global dtype *gparam){
     uint gid = get_global_id(0);
     uint did = gid/PC;
     result[gid] = (${idtype}) (data[gid] ${operator} gparam[did]);

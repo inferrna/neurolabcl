@@ -30,28 +30,33 @@ class myBuffer(cl._cl.Buffer):
             #print("released", self.size, "bytes directly")
             self.release()
 
-flllbacks = {
+fallbacks = {
     'isub': clarray.Array.__isub__,
     'sub':  clarray.Array.__sub__,
     'iadd': clarray.Array.__iadd__,
     'add':  clarray.Array.__add__,
     'imul': clarray.Array.__imul__,
-    'mul':  clarray.Array.__mul__,
+    'mul':  clarray.Array.__mul__
 }
 
         
-def meta_add(self, other,\
-                   # Original method, eg clarray.Array.__add__
-                   fallbackM,\
-                   # Programs for custom other shapes
-                   singleprogram, ndprogram, ndrprogram,\
-                   # Result, usual for __i***__ methods
-                   result=None):
+def meta_add(self, other, actnames):
+    actname = actnames[-1]
+    # Original method, eg clarray.Array.__add__
+    fallbackM = fallbacks[''.join(actnames)]
+    result = None
+    if actnames[0] == 'i': result = self
+
     if isinstance(other, myclArray) and not self.shape == other.shape:
+        neg = ''
         if self.size == 1 and other.size>2:
             self, other = other, self
+            if actname == 'sub':
+                neg = '-'
+                actname = 'add'
         if other.size==1 and not other.offset:
             if not result: result = empty(self.shape, self.dtype)
+            singleprogram = programs.singlesms(self.dtype, actname, neg).prg
             singleprogram(queue, (self.size,), None, self.data, result.data, other.data)
             res = result
         elif other.size==1 and other.offset:
@@ -62,6 +67,7 @@ def meta_add(self, other,\
             if not result: result = empty(self.shape, self.dtype)
             s1 = np.prod(self.shape[:-other.ndim])
             s2 = np.prod(other.shape)
+            ndprogram = programs.ndsms(self.dtype, fname).prg
             ndprogram(queue,\
                       tuple([int(s1), int(s2)]),\
                       None,\
@@ -72,6 +78,7 @@ def meta_add(self, other,\
         elif self.shape[:other.ndim] == other.shape:
             if not result: result = empty(self.shape, self.dtype)
             N = np.prod(self.shape[other.ndim:])
+            ndrprogram = programs.ndrsms(self.dtype, N, fname).prg
             ndrprogram(queue,\
                        (self.size,),\
                        None,\
@@ -252,75 +259,27 @@ class myclArray(clarray.Array):
 
     @chkmethod
     def __sub__(self, other):
-        singleprogram = programs.singlesms(self.dtype).misinglenegsub
-        ndprogram = programs.ndsms(self.dtype, 'sub').ndsub
-        ndrprogram = None
-        if isinstance(other, myclArray):
-            if self.shape[:other.ndim] == other.shape:
-                N = np.prod(self.shape[other.ndim:])
-                ndrprogram = programs.ndrsms(self.dtype, N, 'sub').ndrsub
-        fallback = clarray.Array.__sub__
-        return meta_add(self, other, fallback, singleprogram, ndprogram, ndrprogram)
+        return meta_add(self, other, ('sub',))
 
     @chkvoidmethod
     def __isub__(self, other):
-        singleprogram = programs.singlesms(self.dtype).misinglenegsub
-        ndprogram = programs.ndsms(self.dtype, 'sub').ndsub
-        ndrprogram = None
-        if isinstance(other, myclArray):
-            if self.shape[:other.ndim] == other.shape:
-                N = np.prod(self.shape[other.ndim:])
-                ndrprogram = programs.ndrsms(self.dtype, N, 'sub').ndrsub
-        fallback = clarray.Array.__isub__
-        return meta_add(self, other, fallback, singleprogram, ndprogram, ndrprogram, result=self)
+        return meta_add(self, other, ('i', 'sub',))
 
     @chkmethod
     def __add__(self, other):
-        singleprogram = programs.singlesms(self.dtype).misinglesum
-        ndprogram = programs.ndsms(self.dtype, 'add').ndadd
-        ndrprogram = None
-        if isinstance(other, myclArray):
-            if self.shape[:other.ndim] == other.shape:
-                N = np.prod(self.shape[other.ndim:])
-                ndrprogram = programs.ndrsms(self.dtype, N, 'add').ndradd
-        fallback = clarray.Array.__add__
-        return meta_add(self, other, fallback, singleprogram, ndprogram, ndrprogram)
+        return meta_add(self, other, ('add',))
 
     @chkvoidmethod
     def __iadd__(self, other):
-        singleprogram = programs.singlesms(self.dtype).misinglesum
-        ndprogram = programs.ndsms(self.dtype, 'add').ndadd
-        ndrprogram = None
-        if isinstance(other, myclArray):
-            if self.shape[:other.ndim] == other.shape:
-                N = np.prod(self.shape[other.ndim:])
-                ndrprogram = programs.ndrsms(self.dtype, N, 'add').ndradd
-        fallback = clarray.Array.__iadd__
-        return meta_add(self, other, fallback, singleprogram, ndprogram, ndrprogram, result=self)
+        return meta_add(self, other, ('i', 'add',))
 
     @chkmethod
     def __mul__(self, other):
-        singleprogram = programs.singlesms(self.dtype).misinglemul
-        ndprogram = programs.ndsms(self.dtype, 'mul').ndmul
-        ndrprogram = None
-        if isinstance(other, myclArray):
-            if self.shape[:other.ndim] == other.shape:
-                N = np.prod(self.shape[other.ndim:])
-                ndrprogram = programs.ndrsms(self.dtype, N, 'mul').ndrmul
-        fallback = clarray.Array.__mul__
-        return meta_add(self, other, fallback, singleprogram, ndprogram, ndrprogram)
+        return meta_add(self, other, ('mul', ))
 
     @chkvoidmethod
     def __imul__(self, other):
-        singleprogram = programs.singlesms(self.dtype).misinglemul
-        ndprogram = programs.ndsms(self.dtype, 'mul').ndmul
-        ndrprogram = None
-        if isinstance(other, myclArray):
-            if self.shape[:other.ndim] == other.shape:
-                N = np.prod(self.shape[other.ndim:])
-                ndrprogram = programs.ndrsms(self.dtype, N, 'mul').ndrmul
-        fallback = clarray.Array.__imul__
-        return meta_add(self, other, fallback, singleprogram, ndprogram, ndrprogram, result=self)
+        return meta_add(self, other, ('i', 'mul', ))
 
     @chkmethod
     def max(*args, **kwargs):

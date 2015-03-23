@@ -73,7 +73,7 @@ def meta_add(self, other, actnames):
             if not result: result = empty(self.shape, self.dtype)
             s1 = np.prod(self.shape[:-other.ndim])
             s2 = np.prod(other.shape)
-            ndprogram = programs.ndsms(self.dtype, fname).prg
+            ndprogram = programs.ndsms(self.dtype, actname).prg
             ndprogram(queue,\
                       tuple([int(s1), int(s2)]),\
                       None,\
@@ -84,7 +84,7 @@ def meta_add(self, other, actnames):
         elif self.shape[:other.ndim] == other.shape:
             if not result: result = empty(self.shape, self.dtype)
             N = np.prod(self.shape[other.ndim:])
-            ndrprogram = programs.ndrsms(self.dtype, N, fname).prg
+            ndrprogram = programs.ndrsms(self.dtype, N, actname).prg
             ndrprogram(queue,\
                        (self.size,),\
                        None,\

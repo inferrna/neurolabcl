@@ -340,8 +340,9 @@ class myrandom():
         #np.random.__init__(self)
         self.randomeer = clrandom.RanluxGenerator(queue)
     @justtime        
-    def random(self, size):
-        res = clrandom.rand(queue, size, np.float32, a=0.0, b=1.0)
+    def random(self, size=None):
+        _size = size if size else 1
+        res = clrandom.rand(queue, _size, np.float32, a=0.0, b=1.0)
         res.__class__ = myclArray
         res.reinit()
         return res#myclArray(queue, _res.shape, _res.dtype, data=_res.data)
@@ -353,29 +354,26 @@ class myrandom():
         return res#myclArray(queue, _res.shape, _res.dtype, data=_res.data)
     @justtime        
     def randint(self, low, high=None, size=1):
-        if not type(size) == int:
-            _size = np.prod(size)
-        else:
-            _size = size
+        #_size, reshape = szs(size)
         if high:
             a, b = low, high
         else:
             a, b = 0, low
-        res = clrandom.rand(queue, _size, np.int32, a=a, b=b)
-        if type(size) == tuple:
-            res = res.reshape(size)
+        res = clrandom.rand(queue, size, np.int32, a=a, b=b)
         res.__class__ = myclArray
         res.reinit()
         return res#myclArray(queue, _res.shape, _res.dtype, data=_res.data)
     @justtime        
     def rand(self, *args):
         dtype=np.float32
-        res = clrandom.rand(queue, args, dtype, a=0.0, b=1.0)
+        shape = args if len(args) else 1
+        res = clrandom.rand(queue, shape, dtype, a=0.0, b=1.0)
         res.__class__ = myclArray
         res.reinit()
         return res#myclArray(queue, _res.shape, _res.dtype, data=_res.data)
     @justtime        
-    def randn(self, shape, dtype=np.float32):
+    def randn(self, *args, dtype=np.float32):
+        shape = args if len(args) else 1
         res = clrandom.rand(queue, shape, dtype, a=-1.0, b=1.0)
         res.__class__ = myclArray
         res.reinit()

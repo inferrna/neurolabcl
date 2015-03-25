@@ -131,10 +131,10 @@ class programs():
             dtype, action = args
             dtypecl = typemaps[dtype.name]
             idtypecl = dtypecl
-            #if action in ('lt', 'gt', 'le', 'ge', 'eq', 'ne',):
-            #    idtypecl = 'char'
-            #else:
-            #    idtypecl = dtypecl
+            if action in ('lt', 'gt', 'le', 'ge', 'eq', 'ne',):
+                idtypecl = 'char'
+            else:
+                idtypecl = dtypecl
             operator = operators[action]
             ksourcetpl = Template(clsrc.slicedefs.format(dtypecl, idtypecl, 0) + clsrc.ndsrc)
             ksource = ksourcetpl.render(action=action, operator=operator, idtype=idtypecl)

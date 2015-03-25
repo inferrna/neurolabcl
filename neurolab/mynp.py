@@ -46,12 +46,13 @@ fallbacks = {
 }
 
         
-def meta_add(self, other, actnames):
+def meta_add(self, other, actnames, resdtype=None):
     actname = actnames[-1]
     # Original method, eg clarray.Array.__add__
     fallbackM = fallbacks[''.join(actnames)]
     result = None
     if actnames[0] == 'i': result = self
+    if not resdtype: resdtype = self.dtype
 
     if isinstance(other, myclArray) and not self.shape == other.shape:
         neg = ''
@@ -61,7 +62,7 @@ def meta_add(self, other, actnames):
                 neg = '-'
                 actname = 'add'
         if other.size==1 and not other.offset:
-            if not result: result = empty(self.shape, self.dtype)
+            if not result: result = empty(self.shape, resdtype)
             singleprogram = programs.singlesms(self.dtype, actname, neg).prg
             singleprogram(queue, (self.size,), None, self.data, result.data, other.data)
             res = result
@@ -70,7 +71,7 @@ def meta_add(self, other, actnames):
         elif self.size == other.size:
             res = fallbackM(self.reshape(self.size), other.reshape(self.size)).reshape(self.shape)
         elif self.shape[-other.ndim:] == other.shape:
-            if not result: result = empty(self.shape, self.dtype)
+            if not result: result = empty(self.shape, resdtype)
             s1 = np.prod(self.shape[:-other.ndim])
             s2 = np.prod(other.shape)
             ndprogram = programs.ndsms(self.dtype, actname).prg
@@ -82,7 +83,7 @@ def meta_add(self, other, actnames):
                       other.data)
             res = result
         elif self.shape[:other.ndim] == other.shape:
-            if not result: result = empty(self.shape, self.dtype)
+            if not result: result = empty(self.shape, resdtype)
             N = np.prod(self.shape[other.ndim:])
             ndrprogram = programs.ndrsms(self.dtype, N, actname).prg
             ndrprogram(queue,\
@@ -117,27 +118,27 @@ class myclArray(clarray.Array):
             self.base_data.nowners += 1
 
     def __lt__(self, other):
-        result = meta_add(self, other, ('lt',))
+        result = meta_add(self, other, ('lt',), resdtype=np.uint8)
         result.is_boolean = True
         return result
     def __le__(self, other):
-        result = meta_add(self, other, ('le',))
+        result = meta_add(self, other, ('le',), resdtype=np.uint8)
         result.is_boolean = True
         return result
     def __eq__(self, other):
-        result = meta_add(self, other, ('eq',))
+        result = meta_add(self, other, ('eq',), resdtype=np.uint8)
         result.is_boolean = True
         return result
     def __ne__(self, other):
-        result = meta_add(self, other, ('ne',))
+        result = meta_add(self, other, ('ne',), resdtype=np.uint8)
         result.is_boolean = True
         return result
     def __ge__(self, other):
-        result = meta_add(self, other, ('ge',))
+        result = meta_add(self, other, ('ge',), resdtype=np.uint8)
         result.is_boolean = True
         return result
     def __gt__(self, other):
-        result = meta_add(self, other, ('gt',))
+        result = meta_add(self, other, ('gt',), resdtype=np.uint8)
         result.is_boolean = True
         return result
     def __del__(self):

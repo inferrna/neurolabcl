@@ -351,8 +351,18 @@ class myrandom():
         res.reinit()
         return res#myclArray(queue, _res.shape, _res.dtype, data=_res.data)
     @justtime        
-    def randint(self, low, high=1.0, size=1):
-        res = clrandom.rand(queue, size, np.int32, a=low, b=high)
+    def randint(self, low, high=None, size=1):
+        if not type(size) == int:
+            _size = np.prod(size)
+        else:
+            _size = size
+        if high:
+            a, b = low, high
+        else:
+            a, b = 0, low
+        res = clrandom.rand(queue, _size, np.int32, a=a, b=b)
+        if type(size) == tuple:
+            res = res.reshape(size)
         res.__class__ = myclArray
         res.reinit()
         return res#myclArray(queue, _res.shape, _res.dtype, data=_res.data)

@@ -130,10 +130,11 @@ class programs():
         if not key in programcache.keys():
             dtype, action = args
             dtypecl = typemaps[dtype.name]
-            if action in ('lt', 'gt', 'le', 'ge', 'eq', 'ne',):
-                idtypecl = 'char'
-            else:
-                idtypecl = dtypecl
+            idtypecl = dtypecl
+            #if action in ('lt', 'gt', 'le', 'ge', 'eq', 'ne',):
+            #    idtypecl = 'char'
+            #else:
+            #    idtypecl = dtypecl
             operator = operators[action]
             ksourcetpl = Template(clsrc.slicedefs.format(dtypecl, idtypecl, 0) + clsrc.ndsrc)
             ksource = ksourcetpl.render(action=action, operator=operator, idtype=idtypecl)

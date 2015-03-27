@@ -11,6 +11,7 @@ from builtins import sum as bsum
 ctx = cl.create_some_context()
 queue = cl.CommandQueue(ctx)
 programs = clprograms.programs(ctx)
+align = queue.device.get_info(cl.device_info.MEM_BASE_ADDR_ALIGN)
 #random = np.random
 Inf = np.Inf
 mf = cl.mem_flags
@@ -64,10 +65,20 @@ def meta_add(arr, other, actnames, resdtype=None):
             if actname == 'sub':
                 neg = '-'
                 actname = 'add'
-        if other.size==1 and not other.offset:
+
+        if other.offset:
+            odata = other.base_data.get_sub_region(other.offset, other.size*other.dtype.itemsize)
+        else:
+            odata = other.data
+
+        if arr.offset:
+            adata = arr.base_data.get_sub_region(arr.offset, arr.size*arr.dtype.itemsize)
+        else:
+            adata = arr.data
+        if other.size==1:
             if nores: result = empty(arr.shape, resdtype)
             singleprogram = programs.singlesms(arr.dtype, actname, neg).prg
-            singleprogram(queue, (arr.size,), None, arr.data, result.data, other.data)
+            singleprogram(queue, (arr.size,), None, adata, result.data, odata)
             res = result
         elif other.size==1 and other.offset:
             res = fallbackM(arr, other.get()[0])
@@ -81,9 +92,9 @@ def meta_add(arr, other, actnames, resdtype=None):
             ndprogram(queue,\
                       tuple([int(s1), int(s2)]),\
                       None,\
-                      arr.data,\
+                      adata,\
                       result.data,\
-                      other.data)
+                      odata)
             res = result
         elif arr.shape[:other.ndim] == other.shape:
             if nores: result = empty(arr.shape, resdtype)
@@ -92,9 +103,9 @@ def meta_add(arr, other, actnames, resdtype=None):
             ndrprogram(queue,\
                        (arr.size,),\
                        None,\
-                       arr.data,\
+                       adata,\
                        result.data,\
-                       other.data)
+                       odata)
             res = result
     else:
         res = fallbackM(arr, other)

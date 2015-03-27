@@ -46,55 +46,55 @@ fallbacks = {
 }
 
         
-def meta_add(self, other, actnames, resdtype=None):
+def meta_add(arr, other, actnames, resdtype=None):
     actname = actnames[-1]
     # Original method, eg clarray.Array.__add__
     fallbackM = fallbacks[''.join(actnames)]
     result = None
-    if actnames[0] == 'i': result = self
-    if not resdtype: resdtype = self.dtype
+    if actnames[0] == 'i': result = arr
+    if not resdtype: resdtype = arr.dtype
 
-    if isinstance(other, myclArray) and not self.shape == other.shape:
+    if isinstance(other, myclArray) and not arr.shape == other.shape:
         neg = ''
-        if self.size == 1 and other.size>2:
-            self, other = other, self
+        if arr.size == 1 and other.size>2:
+            arr, other = other, arr
             if actname == 'sub':
                 neg = '-'
                 actname = 'add'
         if other.size==1 and not other.offset:
-            if not result: result = empty(self.shape, resdtype)
-            singleprogram = programs.singlesms(self.dtype, actname, neg).prg
-            singleprogram(queue, (self.size,), None, self.data, result.data, other.data)
+            if not result: result = empty(arr.shape, resdtype)
+            singleprogram = programs.singlesms(arr.dtype, actname, neg).prg
+            singleprogram(queue, (arr.size,), None, arr.data, result.data, other.data)
             res = result
         elif other.size==1 and other.offset:
-            res = fallbackM(self, other.get()[0])
-        elif self.size == other.size:
-            res = fallbackM(self.reshape(self.size), other.reshape(self.size)).reshape(self.shape)
-        elif self.shape[-other.ndim:] == other.shape:
-            if not result: result = empty(self.shape, resdtype)
-            s1 = np.prod(self.shape[:-other.ndim])
+            res = fallbackM(arr, other.get()[0])
+        elif arr.size == other.size:
+            res = fallbackM(arr.reshape(arr.size), other.reshape(arr.size)).reshape(arr.shape)
+        elif arr.shape[-other.ndim:] == other.shape:
+            if not result: result = empty(arr.shape, resdtype)
+            s1 = np.prod(arr.shape[:-other.ndim])
             s2 = np.prod(other.shape)
-            ndprogram = programs.ndsms(self.dtype, actname).prg
+            ndprogram = programs.ndsms(arr.dtype, actname).prg
             ndprogram(queue,\
                       tuple([int(s1), int(s2)]),\
                       None,\
-                      self.data,\
+                      arr.data,\
                       result.data,\
                       other.data)
             res = result
-        elif self.shape[:other.ndim] == other.shape:
-            if not result: result = empty(self.shape, resdtype)
-            N = np.prod(self.shape[other.ndim:])
-            ndrprogram = programs.ndrsms(self.dtype, N, actname).prg
+        elif arr.shape[:other.ndim] == other.shape:
+            if not result: result = empty(arr.shape, resdtype)
+            N = np.prod(arr.shape[other.ndim:])
+            ndrprogram = programs.ndrsms(arr.dtype, N, actname).prg
             ndrprogram(queue,\
-                       (self.size,),\
+                       (arr.size,),\
                        None,\
-                       self.data,\
+                       arr.data,\
                        result.data,\
                        other.data)
             res = result
     else:
-        res = fallbackM(self, other)
+        res = fallbackM(arr, other)
     if not isinstance(res, myclArray):
         res.__class__ = myclArray
         res.reinit()

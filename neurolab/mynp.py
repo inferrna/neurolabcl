@@ -284,7 +284,7 @@ class myclArray(clarray.Array):
             program = programs.sliceset(self.dtype, len(self.shape))
             newsize = int(np.prod(newshape))
             assert value.size == newsize or value.size == 1, "Size of value array {0} does not match size of result indices {1}"\
-                                                                 .format(value.size, result.size)
+                                                                 .format(value.size, newsize)
             if value.size == newsize: 
                 program.mislice(queue, (newsize,), None, indices.data, self.data, value.data)
             elif value.size == 1:

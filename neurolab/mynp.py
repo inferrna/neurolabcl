@@ -282,13 +282,13 @@ class myclArray(clarray.Array):
             value = fix_val(_value)
             indices, newshape = self.createshapes(subscript)
             program = programs.sliceset(self.dtype, len(self.shape))
-            result = empty(newshape, self.dtype)
-            assert value.size == result.size or value.size == 1, "Size of value array {0} does not match size of result indices {1}"\
+            newsize = int(np.prod(newshape))
+            assert value.size == newsize or value.size == 1, "Size of value array {0} does not match size of result indices {1}"\
                                                                  .format(value.size, result.size)
-            if value.size == result.size: 
-                program.mislice(queue, (result.size,), None, indices.data, self.data, value.data)
+            if value.size == newsize: 
+                program.mislice(queue, (newsize,), None, indices.data, self.data, value.data)
             elif value.size == 1:
-                program.mislicesingle(queue, (result.size,), None, indices.data, self.data, value.data)
+                program.mislicesingle(queue, (newsize,), None, indices.data, self.data, value.data)
         elif isinstance(_value, myclArray) and type(subscript) == int and self.shape[-_value.ndim:] == _value.shape:
             count = np.prod(self.shape[-_value.ndim:])
             s1 = count*subscript

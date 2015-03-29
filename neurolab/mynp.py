@@ -291,6 +291,7 @@ class myclArray(clarray.Array):
                 program.mislicesingle(queue, (newsize,), None, indices.data, self.data, value.data)
         elif isinstance(_value, myclArray) and type(subscript) == int and self.shape[-_value.ndim:] == _value.shape:
             count = np.prod(self.shape[-_value.ndim:])
+            subscript = subscript if subscript > 0 else len(self) + subscript
             s1 = count*subscript
             s2 = count*(subscript+1)
             #print(subscript, count, s1, s2)

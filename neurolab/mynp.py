@@ -12,6 +12,7 @@ ctx = cl.create_some_context()
 queue = cl.CommandQueue(ctx)
 programs = clprograms.programs(ctx)
 align = queue.device.get_info(cl.device_info.MEM_BASE_ADDR_ALIGN)
+print("align is", align)
 #random = np.random
 Inf = np.Inf
 mf = cl.mem_flags
@@ -67,7 +68,13 @@ def meta_add(arr, other, actnames, resdtype=None):
                 actname = 'add'
 
         if other.offset:
-            odata = other.base_data.get_sub_region(other.offset, other.size*other.dtype.itemsize)
+            bsz  = other.size*other.dtype.itemsize
+            if other.offset % align == 0:
+                odata = other.base_data.get_sub_region(other.offset, bsz)
+            else:
+                odata = cl.Buffer(ctx, flags=cl.mem_flags.READ_WRITE, size=bsz)
+                ev = cl.enqueue_copy(queue, odata, other.base_data, src_offset=other.offset, byte_count=bsz)
+                ev.wait() #May not be needed
         else:
             odata = other.data
 
@@ -291,10 +298,9 @@ class myclArray(clarray.Array):
                 program.mislicesingle(queue, (newsize,), None, indices.data, self.data, value.data)
         elif isinstance(_value, myclArray) and type(subscript) == int and self.shape[-_value.ndim:] == _value.shape:
             count = np.prod(self.shape[-_value.ndim:])
-            subscript = subscript if subscript > 0 else len(self) + subscript
+            subscript = subscript if subscript >= 0 else len(self) + subscript
             s1 = count*subscript
             s2 = count*(subscript+1)
-            #print(subscript, count, s1, s2)
             self.reshape(self.size)[s1:s2] = _value.reshape(_value.size)
         else:
             try:

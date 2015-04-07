@@ -62,12 +62,8 @@ def chkmethod(func):
     def wrapper(*args, **kw):
         result = func(*args, **kw)
         newargs = convertinst(array.Array, args)
-        #print("wrapper "+func.__name__, newargs, kw)
         npres = npfunc(*newargs, **kw)
         clres = result.get()
-        #print(npres)
-        #print(clres)
-        tst = False
         if isinstance(npres, ndarray):
             assert npres.size == clres.size, "Error in method {2}.\nResult from cl {0}\ndoes not equal result from np {1}.\nArgs was {3}. Types was {4}"\
                                              .format(clres, npres, func.__name__, args, [type(a) for a in args])
@@ -82,13 +78,10 @@ def chkmethod(func):
 def chkfunc(func):
     npfunc = np.__dict__[func.__name__]
     def wrapper(*args, **kw):
-        #print("wrapper "+func.__name__, args, kw)
         result = func(*args, **kw)
         newargs = convertinst(array.Array, args)
         npres = npfunc(*newargs, **kw)
         clres = result.get()
-        #print(npres)
-        #print(clres)
         if isinstance(npres, ndarray):
             assert npres.size == clres.size, "Error in func {2}.\n Result from cl \n{0}\n does not equal result from np\n{1}. Args was {3}"\
                                              .format(clres, npres, func.__name__, args)
@@ -100,4 +93,28 @@ def chkfunc(func):
         return result
     return wrapper
 
+def backtonp_voidmethod(func):
+    npfunc = ndarray.__dict__[func.__name__]
+    def wrapper(*args, **kw):
+        newargs = convertinst(array.Array, args)
+        npfunc(*newargs, **kw)
+        npres = newargs[0] 
+        return npres
+    return wrapper
+
+def backtonp_method(func):
+    npfunc = ndarray.__dict__[func.__name__]
+    def wrapper(*args, **kw):
+        newargs = convertinst(array.Array, args)
+        npres = npfunc(*newargs, **kw)
+        return npres
+    return wrapper
+
+def backtonp_func(func):
+    npfunc = np.__dict__[func.__name__]
+    def wrapper(*args, **kw):
+        newargs = convertinst(array.Array, args)
+        npres = npfunc(*newargs, **kw)
+        return npres
+    return wrapper
 

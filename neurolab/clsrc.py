@@ -85,17 +85,17 @@ __kernel void asign(__global dtype *inpt, __global dtype *outpt){
 }\n
 """
 isinfsrc = """
-__kernel void isposinf(__global dtype *inpt, __global dtype *outpt){
+__kernel void isposinf(__global dtype *inpt, __global char *outpt){
     uint gid = get_global_id(0);
     dtype val = inpt[gid];
-    dtype res = isinf(val);
-    outpt[gid] = res;
+    int res = isinf(val);
+    outpt[gid] = (char) res;
 }\n
-__kernel void isneginf(__global float *inpt, __global dtype *outpt){
+__kernel void isneginf(__global float *inpt, __global char *outpt){
     uint gid = get_global_id(0);
     dtype val = inpt[gid];
-    dtype res =  signbit(val) * isinf(val);
-    outpt[gid] = res;
+    int res =  signbit(val) * isinf(val);
+    outpt[gid] = (char) res;
 }\n
 """
 

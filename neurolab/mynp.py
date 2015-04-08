@@ -5,7 +5,7 @@ from pyopencl import array as clarray
 from pyopencl import algorithm
 import clsrc
 import clprograms
-from checker import chkvoidmethod, chkmethod, justtime, chkfunc
+from checker import justtime,  chkvoidmethod, chkmethod, chkfunc, backtonp_voidmethod, backtonp_method, backtonp_func
 from builtins import sum as bsum
 
 ctx = cl.create_some_context()
@@ -139,28 +139,28 @@ class myclArray(clarray.Array):
             self.base_data.nowners += 1
 
     def __lt__(self, other):
-        result = meta_add(self, other, ('lt',), resdtype=np.uint8)
-        result.is_boolean = True
+        result = meta_add(self, other, ('lt',), resdtype=np.int8)
+        result.dtype = np.bool
         return result
     def __le__(self, other):
-        result = meta_add(self, other, ('le',), resdtype=np.uint8)
-        result.is_boolean = True
+        result = meta_add(self, other, ('le',), resdtype=np.int8)
+        result.dtype = np.bool
         return result
     def __eq__(self, other):
-        result = meta_add(self, other, ('eq',), resdtype=np.uint8)
-        result.is_boolean = True
+        result = meta_add(self, other, ('eq',), resdtype=np.int8)
+        result.dtype = np.bool
         return result
     def __ne__(self, other):
-        result = meta_add(self, other, ('ne',), resdtype=np.uint8)
-        result.is_boolean = True
+        result = meta_add(self, other, ('ne',), resdtype=np.int8)
+        result.dtype = np.bool
         return result
     def __ge__(self, other):
-        result = meta_add(self, other, ('ge',), resdtype=np.uint8)
-        result.is_boolean = True
+        result = meta_add(self, other, ('ge',), resdtype=np.int8)
+        result.dtype = np.bool
         return result
     def __gt__(self, other):
-        result = meta_add(self, other, ('gt',), resdtype=np.uint8)
-        result.is_boolean = True
+        result = meta_add(self, other, ('gt',), resdtype=np.int8)
+        result.dtype = np.bool
         return result
     def __del__(self):
         self.base_data.nowners -=1
@@ -228,7 +228,7 @@ class myclArray(clarray.Array):
 
     @chkmethod
     def __getitem__(self, index):
-        if isinstance(index, myclArray) and index.is_boolean == True:
+        if isinstance(index, myclArray) and index.dtype == np.bool:
             x, y, z = algorithm.copy_if(self.reshape((self.size,)), "index[i]!=0", [("index", index.reshape((index.size,)))])
             res = x[:y.get()]
         elif isinstance(index, tuple) or isinstance(index, slice):
@@ -276,7 +276,7 @@ class myclArray(clarray.Array):
             else:
                 assert True==False, "Can not determine value type in setitem of {0}".format(_value)
             return val
-        if isinstance(subscript, myclArray) and subscript.is_boolean == True:
+        if isinstance(subscript, myclArray) and subscript.dtype == np.bool:
             value = fix_val(_value)
             idxcl = get_arng(self.size)#clarray.arange(queue, 0, self.size, 1, dtype=np.int32)
             x, y, z = algorithm.copy_if(idxcl, "index[i]!=0", [("index", subscript.reshape((subscript.size,)))])
@@ -360,20 +360,17 @@ class myrandom():
     def __init__(self):
         #np.random.__init__(self)
         self.randomeer = clrandom.RanluxGenerator(queue)
-    @justtime        
     def random(self, size=None):
         _size = size if size else 1
         res = clrandom.rand(queue, _size, np.float32, a=0.0, b=1.0)
         res.__class__ = myclArray
         res.reinit()
         return res#myclArray(queue, _res.shape, _res.dtype, data=_res.data)
-    @justtime        
     def uniform(self, low=0.0, high=1.0, size=1):
         res = self.randomeer.uniform(queue, size, np.float32, a=low, b=high)
         res.__class__ = myclArray
         res.reinit()
         return res#myclArray(queue, _res.shape, _res.dtype, data=_res.data)
-    @justtime        
     def randint(self, low, high=None, size=1):
         #_size, reshape = szs(size)
         if high:
@@ -384,7 +381,6 @@ class myrandom():
         res.__class__ = myclArray
         res.reinit()
         return res#myclArray(queue, _res.shape, _res.dtype, data=_res.data)
-    @justtime        
     def rand(self, *args):
         dtype=np.float32
         shape = args if len(args) else 1
@@ -392,7 +388,6 @@ class myrandom():
         res.__class__ = myclArray
         res.reinit()
         return res#myclArray(queue, _res.shape, _res.dtype, data=_res.data)
-    @justtime        
     def randn(self, *args, dtype=np.float32):
         shape = args if len(args) else 1
         res = clrandom.rand(queue, shape, dtype, a=-1.0, b=1.0)
@@ -407,7 +402,22 @@ def arr_from_np(nparr):
     buf = myBuffer(ctx, mf.READ_WRITE| mf.COPY_HOST_PTR, hostbuf=nparr)
     return myclArray(queue, nparr.shape, nparr.dtype, data=buf)
 
-random = myrandom()
+class nprandom():
+    def  random(*args, **kwargs):
+        kwargs.update(dtype=np.float32)
+        return arr_from_np( np.random.random(*args, **kwargs) )
+    def uniform(*args, **kwargs):
+        kwargs.update(dtype=np.float32)
+        return arr_from_np( np.random.uniform(*args, **kwargs) )
+    def randint(*args, **kwargs):
+        kwargs.update(dtype=np.float32)
+        return arr_from_np( np.random.randint(*args, **kwargs) )
+    def    rand(*args, **kwargs):
+        return arr_from_np( np.random.rand(*args, **kwargs).astype(np.float32) )
+    def   randn(*args, **kwargs):
+        kwargs.update(dtype=np.float32)
+        return arr_from_np( np.random.update(*args, **kwargs) )
+random = nprandom#myrandom()
 
 #def argmin(*args, **kwargs):
 #    return arr_from_np(np.argmin(*args, **kwargs))
@@ -450,13 +460,13 @@ def isneginf(a, out=None):
     program = programs.isinf(a.dtype)
     if out:
         program.isneginf(queue, (a.size,), None, a.data, out.data)
-        out.is_boolean = True
+        out.dtype = np.bool
         return out
     else:
-        res = empty(a.shape, dtype=np.uint32)
+        res = empty(a.shape, dtype=np.int8)
         #res = clarray.empty_like(a)
         program.isneginf(queue, (a.size,), None, a.data, res.data)
-        res.is_boolean = True
+        res.dtype = np.bool
         return res
     #return np.isneginf(*args, **kwargs)
 
@@ -546,12 +556,12 @@ def isinf(a, out=None):
     program = programs.isinf(a.dtype)
     if out:
         program.isposinf(queue, (a.size,), None, a.data, out.data)
-        out.is_boolean = True
+        out.dtype = np.bool
         return out
     else:
-        res = empty(a.shape, dtype=np.uint32)
+        res = empty(a.shape, dtype=np.int8)
         program.isposinf(queue, (a.size,), None, a.data, res.data)
-        res.is_boolean = True
+        res.dtype = np.bool
         return res
     #return np.isinf(*args, **kwargs)
 

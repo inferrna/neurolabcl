@@ -17,6 +17,8 @@ print("align is", align)
 Inf = np.Inf
 mf = cl.mem_flags
 arngd = np.array([0])
+dtbool = np.dtype('bool')
+cl.tools.get_or_register_dtype(['bool'], dtype=np.dtype('bool'))
 
 @justtime
 def get_arng(size, dtype=np.int32):
@@ -138,29 +140,35 @@ class myclArray(clarray.Array):
         else:
             self.base_data.nowners += 1
 
+    @chkmethod
     def __lt__(self, other):
-        result = meta_add(self, other, ('lt',), resdtype=np.int8)
-        result.dtype = np.bool
+        result = meta_add(self, other, ('lt',), resdtype=dtbool)
+        result.dtype = dtbool
         return result
+    @chkmethod
     def __le__(self, other):
-        result = meta_add(self, other, ('le',), resdtype=np.int8)
-        result.dtype = np.bool
+        result = meta_add(self, other, ('le',), resdtype=dtbool)
+        result.dtype = dtbool
         return result
+    @chkmethod
     def __eq__(self, other):
-        result = meta_add(self, other, ('eq',), resdtype=np.int8)
-        result.dtype = np.bool
+        result = meta_add(self, other, ('eq',), resdtype=dtbool)
+        result.dtype = dtbool
         return result
+    @chkmethod
     def __ne__(self, other):
-        result = meta_add(self, other, ('ne',), resdtype=np.int8)
-        result.dtype = np.bool
+        result = meta_add(self, other, ('ne',), resdtype=dtbool)
+        result.dtype = dtbool
         return result
+    @chkmethod
     def __ge__(self, other):
-        result = meta_add(self, other, ('ge',), resdtype=np.int8)
-        result.dtype = np.bool
+        result = meta_add(self, other, ('ge',), resdtype=dtbool)
+        result.dtype = dtbool
         return result
+    @chkmethod
     def __gt__(self, other):
-        result = meta_add(self, other, ('gt',), resdtype=np.int8)
-        result.dtype = np.bool
+        result = meta_add(self, other, ('gt',), resdtype=dtbool)
+        result.dtype = dtbool
         return result
     def __del__(self):
         self.base_data.nowners -=1
@@ -228,7 +236,7 @@ class myclArray(clarray.Array):
 
     @chkmethod
     def __getitem__(self, index):
-        if isinstance(index, myclArray) and index.dtype == np.bool:
+        if isinstance(index, myclArray) and index.dtype == dtbool:
             x, y, z = algorithm.copy_if(self.reshape((self.size,)), "index[i]!=0", [("index", index.reshape((index.size,)))])
             res = x[:y.get()]
         elif isinstance(index, tuple) or isinstance(index, slice):
@@ -276,7 +284,7 @@ class myclArray(clarray.Array):
             else:
                 assert True==False, "Can not determine value type in setitem of {0}".format(_value)
             return val
-        if isinstance(subscript, myclArray) and subscript.dtype == np.bool:
+        if isinstance(subscript, myclArray) and subscript.dtype == dtbool:
             value = fix_val(_value)
             idxcl = get_arng(self.size)#clarray.arange(queue, 0, self.size, 1, dtype=np.int32)
             x, y, z = algorithm.copy_if(idxcl, "index[i]!=0", [("index", subscript.reshape((subscript.size,)))])
@@ -460,13 +468,13 @@ def isneginf(a, out=None):
     program = programs.isinf(a.dtype)
     if out:
         program.isneginf(queue, (a.size,), None, a.data, out.data)
-        out.dtype = np.bool
+        out.dtype = dtbool
         return out
     else:
-        res = empty(a.shape, dtype=np.int8)
+        res = empty(a.shape, dtype=dtbool)
         #res = clarray.empty_like(a)
         program.isneginf(queue, (a.size,), None, a.data, res.data)
-        res.dtype = np.bool
+        res.dtype = dtbool
         return res
     #return np.isneginf(*args, **kwargs)
 
@@ -556,12 +564,12 @@ def isinf(a, out=None):
     program = programs.isinf(a.dtype)
     if out:
         program.isposinf(queue, (a.size,), None, a.data, out.data)
-        out.dtype = np.bool
+        out.dtype = dtbool
         return out
     else:
-        res = empty(a.shape, dtype=np.int8)
+        res = empty(a.shape, dtype=dtbool)
         program.isposinf(queue, (a.size,), None, a.data, res.data)
-        res.dtype = np.bool
+        res.dtype = dtbool
         return res
     #return np.isinf(*args, **kwargs)
 

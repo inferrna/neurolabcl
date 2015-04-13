@@ -208,6 +208,9 @@ class myclArray(clarray.Array):
             res.reinit()
         return res
 
+    def tolist(self, *args, **kwargs):
+        return self.get().tolist(*args, **kwargs)
+
     def createshapes(self, index):
         if isinstance(index, slice):
             index = (index,)

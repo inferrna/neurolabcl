@@ -250,8 +250,9 @@ class myclArray(clarray.Array):
             return res
         elif isinstance(index, myclArray) and self.ndim>0:
             program = programs.getndbyids(self.dtype, index.dtype)
+            resshape = (index.size,) + self.shape[1:] if index.size>1 else self.shape[1:]
             dims = (int(np.prod(self.shape[1:])), int(index.size),)
-            res = empty((index.size,) + self.shape[1:], self.dtype)
+            res = empty(resshape, self.dtype)
             program.getbyids(queue, dims, None, index.data, self.data, res.data)
             return res
         else:

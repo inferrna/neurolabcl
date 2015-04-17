@@ -46,7 +46,9 @@ fallbacks = {
     'iadd': clarray.Array.__iadd__,
     'add':  clarray.Array.__add__,
     'imul': clarray.Array.__imul__,
-    'mul':  clarray.Array.__mul__
+    'mul':  clarray.Array.__mul__,
+    #'itruediv': clarray.Array.__itruediv__,
+    'truediv':  clarray.Array.__truediv__
 }
 
         
@@ -68,6 +70,9 @@ def meta_add(arr, other, actnames, resdtype=None):
             if actname == 'sub':
                 neg = '-'
                 actname = 'add'
+            if actname == 'truediv':
+                neg = '1/'
+                actname = 'mul'
 
         if other.offset:
             bsz  = other.size*other.dtype.itemsize
@@ -199,6 +204,14 @@ class myclArray(clarray.Array):
     @chkvoidmethod
     def __imul__(self, other):
         return meta_add(self, other, ('i', 'mul', ))
+
+    @chkmethod
+    def __truediv__(self, other):
+        return meta_add(self, other, ('truediv', ), resdtype=np.float32)
+
+    @chkvoidmethod
+    def __itruediv__(self, other):
+        return meta_add(self, other, ('i', 'truediv', ), resdtype=np.float32)
 
     @chkmethod
     def reshape(self, *shape, **kwargs):

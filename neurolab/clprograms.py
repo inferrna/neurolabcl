@@ -22,7 +22,7 @@ operators = {
     'sub': '-',
     'add': '+',
     'mul': '*',
-    'div': '/',
+    'truediv': '/',
     'ge':  '>=',
     'le':  '<=',
     'eq':  '==',

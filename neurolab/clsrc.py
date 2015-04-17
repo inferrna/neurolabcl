@@ -184,7 +184,7 @@ __kernel void prg(__global dtype *data, __global idtype *result, __global dtype 
     __local dtype param;
     if(get_local_id(0)==0) param = gparam[0];
     barrier(CLK_LOCAL_MEM_FENCE);
-    dtype res = (${idtype}) (${neg} data[gid] ${operator} param);
+    dtype res = (${idtype}) ((${neg} data[gid]) ${operator} param);
     result[gid] = res;
 }
 """

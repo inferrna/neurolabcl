@@ -39,7 +39,7 @@ class programs():
     def sliceset(self, *args):
         key = args+('sliceset',)
         if not key in programcache.keys():
-            dtype, ndim = args
+            dtype, ndim, cs = args          # cs as chunk size. Usual size of value if it shape may be fitted into source shapes
             nds = ndim-1
             if nds>0:
                 slicesrcl = [clsrc.norecslicesrc.format("", "", min(1, nds), nds)]+\

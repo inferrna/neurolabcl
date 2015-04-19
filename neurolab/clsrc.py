@@ -54,12 +54,15 @@ __kernel void mislice(__global int4 *params, __global dtype *data, __global dtyp
 }
 __kernel void mislicesingle(__global int4 *params, __global dtype *data, __global dtype *source){
     uint gid = get_global_id(0);
-    __local dtype value;
+    uint gid1 = get_global_id(1);
+    __local dtype value[${cs}];
     if(get_local_id(0) == 0){
-        value = source[0];
+        for(uint i=0; i<${cs}; i++){
+            value[i] = source[i];
+        }
     }
     barrier(CLK_LOCAL_MEM_FENCE);
-    data[slice(gid, params, PC-1)] = value;
+    data[slice(gid, params, PC-1)*${cs}+gid1] = value[gid1];
 }
 """
 getbyidssrc = """

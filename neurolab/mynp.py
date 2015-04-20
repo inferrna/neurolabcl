@@ -313,14 +313,22 @@ class myclArray(clarray.Array):
         elif isinstance(subscript, tuple) or isinstance(subscript, slice):
             value = fix_val(_value)
             indices, newshape = self.createshapes(subscript)
-            program = programs.sliceset(self.dtype, len(self.shape))
             newsize = int(np.prod(newshape))
-            assert value.size == newsize or value.size == 1, "Size of value array {0} does not match size of result indices {1}"\
-                                                                 .format(value.size, newsize)
+            assert newshape[-value.ndim:] == value.shape or value.size == newsize or value.size == 1,\
+                                     "Size of value array {0} does not match size of result indices {1}"\
+                                                                 .format(value.shape, newshape)
             if value.size == newsize: 
-                program.mislice(queue, (newsize,), None, indices.data, self.data, value.data)
+                programs.sliceset(self.dtype, self.ndim, 1)\
+                        .mislice(queue, (newsize,), None, indices.data, self.data, value.data)
             elif value.size == 1:
-                program.mislicesingle(queue, (newsize,), None, indices.data, self.data, value.data)
+                programs.sliceset(self.dtype, self.ndim, 1)\
+                        .mislicesingle(queue, (newsize,), None, indices.data, self.data, value.data, np.int32(0))
+            elif newshape[-value.ndim:] == value.shape:
+                sizes = (int(np.prod(newshape[:-value.ndim])), int(np.prod(value.shape)),)
+                print("newshape is", newshape)
+                print("sizes is", sizes)
+                programs.sliceset(self.dtype, self.ndim - value.ndim, sizes[-1])\
+                        .mislicesingle(queue, sizes, None, indices.data, self.data, value.base_data, np.int32(value.offset))
         elif isinstance(_value, myclArray) and type(subscript) == int and self.shape[-_value.ndim:] == _value.shape:
             count = np.prod(self.shape[-_value.ndim:])
             subscript = subscript if subscript >= 0 else len(self) + subscript

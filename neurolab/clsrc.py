@@ -52,9 +52,10 @@ __kernel void mislice(__global int4 *params, __global dtype *data, __global dtyp
     uint gid = get_global_id(0);
     data[slice(gid, params, PC-1)] = source[gid];
 }
-__kernel void mislicesingle(__global int4 *params, __global dtype *data, __global dtype *source){
+__kernel void mislicesingle(__global int4 *params, __global dtype *data, __global dtype *_source, uint srcoffset){
     uint gid = get_global_id(0);
     uint gid1 = get_global_id(1);
+    __global dtype *source = _source + srcoffset;
     __local dtype value[${cs}];
     if(get_local_id(0) == 0){
         for(uint i=0; i<${cs}; i++){

@@ -436,22 +436,22 @@ def arr_from_np(nparr):
     return myclArray(queue, nparr.shape, nparr.dtype, data=buf)
 
 class nprandom():
-    def  random(*args, **kwargs):
+    def random(self, *args, **kwargs):
         kwargs.update(dtype=np.float32)
         return arr_from_np( np.random.random(*args, **kwargs) )
-    def uniform(*args, **kwargs):
+    def uniform(self, *args, **kwargs):
         kwargs.update(dtype=np.float32)
         return arr_from_np( np.random.uniform(*args, **kwargs) )
-    def randint(*args, **kwargs):
-        kwargs.update(dtype=np.float32)
+    def randint(self, *args, **kwargs):
+        kwargs.update(dtype=np.int32)
         return arr_from_np( np.random.randint(*args, **kwargs) )
-    def rand(*args, **kwargs):
+    def rand(self, *args, **kwargs):
         return arr_from_np( np.random.rand(*args, **kwargs).astype(np.float32) )
-    def randn(*args, **kwargs):
+    def randn(self, *args, **kwargs):
         kwargs.update(dtype=np.float32)
         return arr_from_np( np.random.randn(*args, **kwargs) )
 
-random = myrandom()
+random = nprandom()
 
 #def argmin(*args, **kwargs):
 #    return arr_from_np(np.argmin(*args, **kwargs))

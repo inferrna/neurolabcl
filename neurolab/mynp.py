@@ -446,10 +446,9 @@ class nprandom():
     def rand(self, *args, **kwargs):
         return arr_from_np( np.random.rand(*args, **kwargs).astype(np.float32) )
     def randn(self, *args, **kwargs):
-        kwargs.update(dtype=np.float32)
-        return arr_from_np( np.random.randn(*args, **kwargs) )
+        return arr_from_np( np.random.randn(*args, **kwargs).astype(np.float32) )
 
-random = nprandom()
+random = myrandom()
 
 #def argmin(*args, **kwargs):
 #    return arr_from_np(np.argmin(*args, **kwargs))

@@ -5,7 +5,7 @@ from pyopencl import array as clarray
 from pyopencl import algorithm
 import clsrc
 import clprograms
-from checker import justtime,  chkvoidmethod, chkmethod, chkfunc, backtonp_voidmethod, backtonp_method, backtonp_func
+from checker import justtime,  chkvoidmethod, chkmethod, chkfunc
 from builtins import sum as bsum
 
 ctx = cl.create_some_context()
@@ -50,6 +50,44 @@ fallbacks = {
     #'itruediv': clarray.Array.__itruediv__,
     'truediv':  clarray.Array.__truediv__
 }
+
+def convertinst(inst, varbls):
+    newvs = []
+    for varbl in varbls:
+        if isinstance(varbl, inst):
+            v = varbl.get()
+            if varbl.is_boolean:
+                newvs.append(v>0)
+            else:
+                newvs.append(v)
+        else:
+            newvs.append(varbl)
+    return tuple(newvs)
+def backtonp_voidmethod(func):
+    npfunc = np.ndarray.__dict__[func.__name__]
+    def wrapper(*args, **kw):
+        newargs = convertinst(clarray.Array, args)
+        npfunc(*newargs, **kw)
+        npres = newargs[0] 
+        return arr_from_np(npres)
+    return wrapper
+
+def backtonp_method(func):
+    npfunc = np.ndarray.__dict__[func.__name__]
+    def wrapper(*args, **kw):
+        newargs = convertinst(clarray.Array, args)
+        npres = npfunc(*newargs, **kw)
+        return arr_from_np(npres)
+    return wrapper
+
+def backtonp_func(func):
+    npfunc = np.__dict__[func.__name__]
+    def wrapper(*args, **kw):
+        newargs = convertinst(clarray.Array, args)
+        npres = npfunc(*newargs, **kw)
+        return arr_from_np(npres)
+    return wrapper
+
 
         
 def meta_add(arr, other, actnames, resdtype=None):
@@ -197,11 +235,11 @@ class myclArray(clarray.Array):
     def __iadd__(self, other):
         return meta_add(self, other, ('i', 'add',))
 
-    @chkmethod
+    @backtonp_method
     def __mul__(self, other):
         return meta_add(self, other, ('mul', ))
 
-    @chkvoidmethod
+    @backtonp_voidmethod
     def __imul__(self, other):
         return meta_add(self, other, ('i', 'mul', ))
 
@@ -428,6 +466,8 @@ class myrandom():
 
 @justtime        
 def arr_from_np(nparr):
+    if not isinstance(nparr, np.ndarray):
+        return nparr
     if nparr.dtype == np.object:
         nparr = np.concatenate(nparr)
     buf = myBuffer(ctx, mf.READ_WRITE| mf.COPY_HOST_PTR, hostbuf=nparr)

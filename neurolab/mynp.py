@@ -325,8 +325,6 @@ class myclArray(clarray.Array):
                         .mislicesingle(queue, (newsize,), None, indices.data, self.data, value.data, np.int32(0))
             elif newshape[-value.ndim:] == value.shape:
                 sizes = (int(np.prod(newshape[:-value.ndim])), int(np.prod(value.shape)),)
-                print("newshape is", newshape)
-                print("sizes is", sizes)
                 programs.sliceset(self.dtype, self.ndim - value.ndim, sizes[-1])\
                         .mislicesingle(queue, sizes, None, indices.data, self.data, value.base_data, np.int32(value.offset))
         elif isinstance(_value, myclArray) and type(subscript) == int and self.shape[-_value.ndim:] == _value.shape:

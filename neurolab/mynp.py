@@ -26,8 +26,8 @@ def get_arng(size, dtype=np.int32):
 
 class myBuffer(cl._cl.Buffer):
     def __init__(self, *args, **kwargs):
-        cl._cl.Buffer.__init__(self, *args, **kwargs)
         self.nowners = 0
+        cl._cl.Buffer.__init__(self, *args, **kwargs)
     def __del__(self):
         self.nowners -= 1
         if self.nowners == 0:
@@ -63,6 +63,7 @@ def convertinst(inst, varbls):
         else:
             newvs.append(varbl)
     return tuple(newvs)
+
 def backtonp_voidmethod(func):
     npfunc = np.ndarray.__dict__[func.__name__]
     def wrapper(*args, **kw):
@@ -239,11 +240,11 @@ class myclArray(clarray.Array):
     def __mul__(self, other):
         return meta_add(self, other, ('mul', ))
 
-    @backtonp_voidmethod
+    @chkmethod
     def __imul__(self, other):
         return meta_add(self, other, ('i', 'mul', ))
 
-    @chkmethod
+    @backtonp_method
     def __truediv__(self, other):
         return meta_add(self, other, ('truediv', ), resdtype=np.float32)
 
@@ -251,7 +252,7 @@ class myclArray(clarray.Array):
     def __itruediv__(self, other):
         return meta_add(self, other, ('i', 'truediv', ), resdtype=np.float32)
 
-    @chkmethod
+    @backtonp_method
     def reshape(self, *shape, **kwargs):
         res = clarray.Array.reshape(self, *shape, **kwargs)
         if not isinstance(res, myclArray):
@@ -366,11 +367,9 @@ class myclArray(clarray.Array):
                 programs.sliceset(self.dtype, self.ndim - value.ndim, sizes[-1])\
                         .mislicesingle(queue, sizes, None, indices.data, self.data, value.base_data, np.int32(value.offset))
         elif isinstance(_value, myclArray) and type(subscript) == int and self.shape[-_value.ndim:] == _value.shape:
-            count = np.prod(self.shape[-_value.ndim:])
-            subscript = subscript if subscript >= 0 else len(self) + subscript
-            s1 = count*subscript
-            s2 = count*(subscript+1)
-            self.reshape(self.size)[s1:s2] = _value.reshape(_value.size)
+            count = int(np.prod(self.shape[-_value.ndim:]))
+            programs.singleset(self.dtype)\
+                    .prg(queue, (count,), None, self.data, _value.base_data, np.int32(0), global_offset=(count*subscript,))
         else:
             try:
                 clarray.Array.setitem(self, subscript, _value, queue=queue)

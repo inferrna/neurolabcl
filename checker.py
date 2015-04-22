@@ -39,8 +39,8 @@ def chkvoidmethod(func):
     npfunc = ndarray.__dict__[func.__name__]
     def wrapper(*args, **kw):
         newargs = convertinst(array.Array, args)
-        npfunc(*newargs, **kw)
         result = func(*args, **kw)
+        npfunc(*newargs, **kw)
         npres = newargs[0] 
         clres = args[0].get()
         tst = False
@@ -48,12 +48,12 @@ def chkvoidmethod(func):
             assert npres.size == clres.size, "Error in void method {2}.\
                                               Result from cl \n{0}\n does not equal result from np\n{1}.\
                                               Args was {3}. Types was {4}"\
-                                             .format(clres, npres, func.__name__, args, [type(a) for a in args])
+                                             .format(args[0], npres, func.__name__, args, [type(a) for a in args])
             tst = ((abs(clres-npres))<0.00001).all()
         else:
             tst = (abs(clres-npres))<0.00001
-        assert tst==True, "Error in void method {2}. Result from cl \n{0}\n does not equal result from np\n{1}. Args was {3}"\
-                          .format(clres, npres, func.__name__, args)
+        assert tst==True, "Error in void method {2}. Result from cl \n{0}\n does not equal result from np\n{1}. Args was {3}. Types was {4}"\
+                          .format(clres, npres, func.__name__, args, [type(a) for a in args])
         return result
     return wrapper
 
@@ -70,8 +70,8 @@ def chkmethod(func):
             tst = ((abs(clres-npres))<0.00001).all()
         else:
             tst = (abs(clres-npres))<0.00001
-        assert tst==True, "Error in method {2}. \nResult from cl \n{0}\n does not equal result from np\n{1}. Args was {3}"\
-                          .format(clres, npres, func.__name__, args)
+        assert tst==True, "Error in method {2}. \nResult from cl \n{0}\n does not equal result from np\n{1}. Args was {3} Types was {4}"\
+                          .format(clres, npres, func.__name__, args, [type(a) for a in args])
         return result
     return wrapper
 

@@ -86,6 +86,13 @@ class programs():
             programcache[key] = cl.Program(self.ctx, ksource).build()
         return programcache[key]
 
+    def singleset(self, dtype):
+        key = (dtype, 'singleset',)
+        if not key in programcache.keys():
+            ksource = clsrc.slicedefs.format(typemaps[dtype.name], 0, 0) + clsrc.singlesetsrc
+            programcache[key] = cl.Program(self.ctx, ksource).build()
+        return programcache[key]
+
     def sum(self, *args):
         key = args+('sum',)
         if not key in programcache.keys():

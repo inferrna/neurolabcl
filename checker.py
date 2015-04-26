@@ -27,10 +27,10 @@ def convertinst(inst, varbls):
     for varbl in varbls:
         if isinstance(varbl, inst):
             v = varbl.get()
-            if varbl.is_boolean:
-                newvs.append(v>0)
-            else:
-                newvs.append(v)
+            #if varbl.is_boolean:
+            #    newvs.append(v>0)
+            #else:
+            newvs.append(v)
         else:
             newvs.append(varbl)
     return tuple(newvs)

@@ -18,6 +18,7 @@ Inf = np.Inf
 mf = cl.mem_flags
 arngd = np.array([0])
 dtbool = np.dtype('bool')
+float_ = np.float32
 cl.tools.get_or_register_dtype(['bool'], dtype=np.dtype('bool'))
 
 @justtime
@@ -207,11 +208,11 @@ class myclArray(clarray.Array):
 
     @chkmethod
     def __truediv__(self, other):
-        return meta_add(self, other, ('truediv', ), resdtype=np.float32)
+        return meta_add(self, other, ('truediv', ), resdtype=np.float_)
 
     @chkvoidmethod
     def __itruediv__(self, other):
-        return meta_add(self, other, ('i', 'truediv', ), resdtype=np.float32)
+        return meta_add(self, other, ('i', 'truediv', ), resdtype=np.float_)
 
     @chkmethod
     def reshape(self, *shape, **kwargs):
@@ -382,7 +383,7 @@ class myclArray(clarray.Array):
     def flatten(self):
         return self.ravel()
 
-#randomeer.uniform(queue, (10,2,), np.float32, a=-0.5, b=0.5)
+#randomeer.uniform(queue, (10,2,), np.float_, a=-0.5, b=0.5)
 #np.random.uniform(-0.5, 0.5, (10, 2))
 
 class myrandom():
@@ -391,12 +392,12 @@ class myrandom():
         self.randomeer = clrandom.RanluxGenerator(queue)
     def random(self, size=None):
         _size = size if size else 1
-        res = clrandom.rand(queue, _size, np.float32, a=0.0, b=1.0)
+        res = clrandom.rand(queue, _size, np.float_, a=0.0, b=1.0)
         res.__class__ = myclArray
         res.reinit()
         return res#myclArray(queue, _res.shape, _res.dtype, data=_res.data)
     def uniform(self, low=0.0, high=1.0, size=1):
-        res = self.randomeer.uniform(queue, size, np.float32, a=low, b=high)
+        res = self.randomeer.uniform(queue, size, np.float_, a=low, b=high)
         res.__class__ = myclArray
         res.reinit()
         return res#myclArray(queue, _res.shape, _res.dtype, data=_res.data)
@@ -411,13 +412,13 @@ class myrandom():
         res.reinit()
         return res#myclArray(queue, _res.shape, _res.dtype, data=_res.data)
     def rand(self, *args):
-        dtype=np.float32
+        dtype=np.float_
         shape = args if len(args) else 1
         res = clrandom.rand(queue, shape, dtype, a=0.0, b=1.0)
         res.__class__ = myclArray
         res.reinit()
         return res#myclArray(queue, _res.shape, _res.dtype, data=_res.data)
-    def randn(self, *args, dtype=np.float32):
+    def randn(self, *args, dtype=np.float_):
         shape = args if len(args) else 1
         res = clrandom.rand(queue, shape, dtype, a=-1.0, b=1.0)
         res.__class__ = myclArray
@@ -433,18 +434,18 @@ def arr_from_np(nparr):
 
 class nprandom():
     def random(self, *args, **kwargs):
-        kwargs.update(dtype=np.float32)
+        kwargs.update(dtype=np.float_)
         return arr_from_np( np.random.random(*args, **kwargs) )
     def uniform(self, *args, **kwargs):
-        kwargs.update(dtype=np.float32)
+        kwargs.update(dtype=np.float_)
         return arr_from_np( np.random.uniform(*args, **kwargs) )
     def randint(self, *args, **kwargs):
         kwargs.update(dtype=np.int32)
         return arr_from_np( np.random.randint(*args, **kwargs) )
     def rand(self, *args, **kwargs):
-        return arr_from_np( np.random.rand(*args, **kwargs).astype(np.float32) )
+        return arr_from_np( np.random.rand(*args, **kwargs).astype(np.float_) )
     def randn(self, *args, **kwargs):
-        return arr_from_np( np.random.randn(*args, **kwargs).astype(np.float32) )
+        return arr_from_np( np.random.randn(*args, **kwargs).astype(np.float_) )
 
 random = myrandom()
 
@@ -501,7 +502,7 @@ def isneginf(a, out=None):
 
 
 @chkfunc
-def ones_like(a, dtype=np.float32, order='K', subok=True):
+def ones_like(a, dtype=np.float_, order='K', subok=True):
     res = empty(a.shape, dtype=(dtype or a.dtype))
     res.fill(1, queue=queue)
     return res
@@ -528,7 +529,7 @@ def all(a, axis=None, out=None, keepdims=False):
 
 
 @chkfunc
-def asfarray(a, dtype=np.float32):
+def asfarray(a, dtype=np.float_):
     if isinstance(a, myclArray):
         return a.astype(dtype, queue=queue)
     else:
@@ -545,7 +546,7 @@ def exp(a, out=None):
 
 
 @chkfunc
-def linspace(start, stop, num=50, endpoint=True, retstep=False, dtype=np.float32):
+def linspace(start, stop, num=50, endpoint=True, retstep=False, dtype=np.float_):
     #TODO: create native function
     if num<2: return array([start])
     if endpoint:
@@ -555,7 +556,7 @@ def linspace(start, stop, num=50, endpoint=True, retstep=False, dtype=np.float32
     diff = (stop - start) / mnum
     if endpoint:
         stop = stop + diff
-    res = clarray.arange(queue, start, stop, diff, dtype=np.float32)[:num]
+    res = clarray.arange(queue, start, stop, diff, dtype=np.float_)[:num]
     res.__class__ = myclArray
     res.reinit()
     return res
@@ -612,7 +613,7 @@ def abs(*args, **kwargs):
         return arr_from_np(np.abs(*args, **kwargs))
 
 @justtime
-def empty(shape, dtype=np.float32):
+def empty(shape, dtype=np.float_):
     #return arr_from_np( np.empty(*args, **kwargs) )
     return myclArray(queue, shape, dtype)
 
@@ -703,7 +704,7 @@ def sin(arr):
 
 
 @chkfunc
-def zeros(shape, dtype=np.float32, order='C'):
+def zeros(shape, dtype=np.float_, order='C'):
     res = clarray.zeros(queue, shape, dtype, order)
     res.__class__ = myclArray
     res.reinit()
@@ -712,5 +713,5 @@ def zeros(shape, dtype=np.float32, order='C'):
 @chkfunc
 def array(*args, **kwargs):
     if not 'dtype' in kwargs.keys():
-        kwargs['dtype'] = np.float32
+        kwargs['dtype'] = np.float_
     return arr_from_np( np.array(*args, **kwargs) )

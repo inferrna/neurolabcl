@@ -7,8 +7,9 @@ class collector():
     def __init__(self, funcname): 
         self.bage = [funcname, 0.0, 0, 0.0]
     def __del__(self):
-        if self.bage[2]: self.bage[3] = self.bage[1]/self.bage[2]
-        print("Function {0}. Total time {1}, total calls {2}. Average time {3}.".format(*self.bage))
+        if self.bage[2]:
+            self.bage[3] = self.bage[1]/self.bage[2]
+            print("Function {0}. Total time {1}, total calls {2}. Average time {3}.".format(*self.bage))
 
 
 def justtime(func):

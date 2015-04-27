@@ -183,6 +183,7 @@ class programs():
             operator = operators[action]
             ksourcetpl = Template(clsrc.slicedefs.format(dtypecl, idtypecl, 0) + clsrc.singlesrc)
             ksource = ksourcetpl.render(action=action, operator=operator, idtype=idtypecl, neg=neg)
+            print(ksource)
             programcache[key] = cl.Program(self.ctx, ksource).build()
         return programcache[key]
 

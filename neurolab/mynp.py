@@ -100,6 +100,7 @@ def meta_add(arr, other, actnames, resdtype=None):
         elif arr.size == other.size:
             res = fallbackM(arr.reshape(arr.size), other.reshape(arr.size)).reshape(arr.shape)
         elif arr.shape[-other.ndim:] == other.shape:
+            print("arr.shape[-other.ndim:] == other.shape case")
             if nores: result = empty(arr.shape, resdtype)
             s1 = np.prod(arr.shape[:-other.ndim])
             s2 = np.prod(other.shape)
@@ -245,7 +246,7 @@ class myclArray(clarray.Array):
             index = index + (slice(0, self.shape[i-dl], 1),)
         npindices = np.array([(a,)+getslice(b, a) for a, b in zip(self.shape, index)], dtype=np.int32)
         newshape = [1+(a[2]-a[1]-1)//a[3].__abs__() for a in npindices]
-        newshape = tuple([a for a, b in zip(newshape, self.shape) if not a==1])
+        newshape = tuple([a for a, b in zip(newshape, self.shape)])# if not a==1])
         if newshape == (): newshape = (1,)
         indices = arr_from_np(npindices)
         return indices, newshape

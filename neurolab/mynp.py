@@ -245,8 +245,9 @@ class myclArray(clarray.Array):
         for i in range(0, dl):
             index = index + (slice(0, self.shape[i-dl], 1),)
         npindices = np.array([(a,)+getslice(b, a) for a, b in zip(self.shape, index)], dtype=np.int32)
+        #print("npindices is", npindices)
         newshape = [1+(a[2]-a[1]-1)//a[3].__abs__() for a in npindices]
-        newshape = tuple([a for a, b in zip(newshape, self.shape)])# if not a==1])
+        newshape = tuple([a for a, b, i in zip(newshape, self.shape, index) if not isinstance(i, int)])
         if newshape == (): newshape = (1,)
         indices = arr_from_np(npindices)
         return indices, newshape

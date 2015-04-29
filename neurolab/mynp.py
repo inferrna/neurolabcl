@@ -316,7 +316,6 @@ class myclArray(clarray.Array):
             else:
                 #valsz, dtype, idtype
                 cs = int(np.prod(self.shape[1:]))
-                # print("cs == ", cs)
                 # need Assert subscript.size <= cs
                 programs.setndbyids(cs, self.dtype, subscript.dtype)\
                         .setbyids(queue, (cs, subscript.size,), None, subscript.data, self.data, value.data)

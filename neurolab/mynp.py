@@ -304,13 +304,22 @@ class myclArray(clarray.Array):
             else:
                 assert True==False, "Can not determine value type in setitem of {0}".format(_value)
             return val
-        if isinstance(subscript, myclArray) and subscript.dtype == dtbool:
+        if isinstance(subscript, myclArray):
             value = fix_val(_value)
-            idxcl = get_arng(self.size)#clarray.arange(queue, 0, self.size, 1, dtype=np.int32)
-            x, y, z = algorithm.copy_if(idxcl, "index[i]!=0", [("index", subscript.reshape((subscript.size,)))])
-            if y:
-                res = x[:y.get()]
-                self.reshape((self.size,))[res] = value
+            if subscript.dtype == dtbool:
+                idxcl = get_arng(self.size)#clarray.arange(queue, 0, self.size, 1, dtype=np.int32)
+                x, y, z = algorithm.copy_if(idxcl, "index[i]!=0",\
+                                            [("index", subscript.reshape((subscript.size,)))])
+                if y:
+                    res = x[:y.get()]
+                    self.reshape((self.size,))[res] = value
+            else:
+                #valsz, dtype, idtype
+                cs = int(np.prod(self.shape[1:]))
+                # print("cs == ", cs)
+                # need Assert subscript.size <= cs
+                programs.setndbyids(cs, self.dtype, subscript.dtype)\
+                        .setbyids(queue, (cs, subscript.size,), None, subscript.data, self.data, value.data)
         #elif isinstance(subscript, myclArray) and subscript.ndim > 1:
         #    clarray.Array.setitem(self.reshape(self.size), subscript.reshape(subscript.size), value, queue=queue)
         elif isinstance(subscript, tuple) or isinstance(subscript, slice):

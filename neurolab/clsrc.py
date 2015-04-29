@@ -71,11 +71,36 @@ __kernel void getbyids(__global idtype *ids, __global dtype *data, __global dtyp
     size_t gid0 = get_global_id(0);  //Addr inside block
     size_t gs0 = get_global_size(0); //Block size  
     size_t gid1 = get_global_id(1);  //Block addr in result array
-    size_t idx = ids[gid1];       //Block addr in source data
+    size_t idx = ids[gid1];          //Block addr in source data
     size_t didx = idx*gs0+gid0;      //Addr in source data
     size_t ridx = gid1*gs0+gid0;     //Addr in result array
     dtype res = data[didx];
     result[ridx] = res; 
+}
+"""
+setbyidssrc = """
+__kernel void setbyids(__global idtype *ids, __global dtype *data, __global dtype *_value){
+    size_t gid0 = get_global_id(0);  //Addr inside block
+    size_t gs0 = get_global_size(0); //Block size  
+    size_t gid1 = get_global_id(1);  //Block index
+    size_t idx = ids[gid1];          //Block addr in source data
+    size_t didx = idx*gs0+gid0;      //Addr in source data
+    __local dtype value[${cs}];
+    % if cs>1:
+    if(get_local_id(0) == 0){
+        for(uint i=0; i<${cs}; i++){
+            value[i] = _value[i];
+        }
+    }
+    barrier(CLK_LOCAL_MEM_FENCE);
+    data[didx] = value[gid0];
+    % else:
+    if(get_local_id(0) == 0){
+        value[0] = _value[0];
+    }
+    barrier(CLK_LOCAL_MEM_FENCE);
+    data[didx] = value[0];
+    % endif
 }
 """
 

@@ -171,6 +171,14 @@ class programs():
             programcache[key] = cl.Program(self.ctx, ksource).build()
         return programcache[key]
 
+    def setndbyids(self, valsz, dtype, idtype):
+        key = (dtype, idtype, 'setndbyids',)
+        if not key in programcache.keys():
+            ksourcetpl = Template(clsrc.slicedefs.format(typemaps[dtype.name], typemaps[idtype.name], 0) + clsrc.setbyidssrc)
+            ksource = ksourcetpl.render(cs=valsz)
+            programcache[key] = cl.Program(self.ctx, ksource).build()
+        return programcache[key]
+
     def singlesms(self, *args):
         key = args+('singlesms',)
         if not key in programcache.keys():

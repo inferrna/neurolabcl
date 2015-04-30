@@ -1,9 +1,9 @@
 import numpy as np
-import neurolab as nl
+import mynp
 import time
 
 harr = np.random.randint(99, size=(30, 55, 4,))
-carr = nl.mynp.arr_from_np(harr)
+carr = mynp.arr_from_np(harr)
 farr = carr.reshape((carr.size,))
 hsa = harr[5::9,::7,::2]
 csa = carr[5::9,::7,::2]

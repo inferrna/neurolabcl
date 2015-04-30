@@ -256,7 +256,10 @@ class myclArray(clarray.Array):
     @chkmethod
     def __getitem__(self, index):
         if isinstance(index, myclArray) and index.dtype == dtbool:
-            x, y, z = algorithm.copy_if(self.reshape((self.size,)), "index[i]!=0", [("index", index.reshape((index.size,)))])
+            x, y, z = algorithm.copy_if(self.reshape((self.size,)),\
+                                        "index[i]!=0",\
+                                        # TODO: avoid type convert
+                                        [("index", index.reshape((index.size,)).astype(np.uint8))])
             res = x[:y.get()]
         elif isinstance(index, tuple) or isinstance(index, slice):
             indices, newshape = self.createshapes(index)
@@ -308,11 +311,17 @@ class myclArray(clarray.Array):
             value = fix_val(_value)
             if subscript.dtype == dtbool:
                 idxcl = get_arng(self.size)#clarray.arange(queue, 0, self.size, 1, dtype=np.int32)
-                x, y, z = algorithm.copy_if(idxcl, "index[i]!=0",\
-                                            [("index", subscript.reshape((subscript.size,)))])
+                x, y, z = algorithm.copy_if(idxcl, "index[i]!=false",\
+                                            # TODO: avoid type convert
+                                            [("index", subscript.reshape((subscript.size,)).astype(np.uint8))],\
+                                            preamble="#define bool int")
                 if y:
                     res = x[:y.get()]
                     self.reshape((self.size,))[res] = value
+                else:
+                    print("got bads x, y, z: ", x, y, z)
+                    print("got idxcl: \n", idxcl)
+                    print("got subscript: \n", subscript)
             else:
                 #valsz, dtype, idtype
                 cs = int(np.prod(self.shape[1:]))

@@ -50,9 +50,9 @@ def chkvoidmethod(func):
                                               Result from cl \n{0}\n does not equal result from np\n{1}.\
                                               Args was {3}. Types was {4}"\
                                              .format(clres, npres, func.__name__, args, [type(a) for a in args])
-            tst = ((abs(clres-npres))<0.000001).all()
+            tst = ((abs(clres-npres))<0.00001).all()
         else:
-            tst = (abs(clres-npres))<0.000001
+            tst = (abs(clres-npres))<0.00001
         assert tst==True, "Error in void method {2}. Result from cl \n{0}\n does not equal result from np\n{1}. Args was {3}"\
                           .format(clres, npres, func.__name__, args)
         return result
@@ -68,9 +68,9 @@ def chkmethod(func):
         if isinstance(npres, ndarray):
             assert npres.size == clres.size, "Error in method {2}.\nResult from cl {0}\ndoes not equal result from np {1}.\nArgs was {3}. Types was {4}"\
                                              .format(clres, npres, func.__name__, args, [type(a) for a in args])
-            tst = ((abs(clres-npres))<0.000001).all()
+            tst = ((abs(clres-npres))<0.00001).all()
         else:
-            tst = (abs(clres-npres))<0.000001
+            tst = (abs(clres-npres))<0.00001
         assert tst==True, "Error in method {2}. \nResult from cl \n{0}\n does not equal result from np\n{1}. Args was {3}"\
                           .format(clres, npres, func.__name__, args)
         return result
@@ -86,9 +86,9 @@ def chkfunc(func):
         if isinstance(npres, ndarray):
             assert npres.size == clres.size, "Error in func {2}.\n Result from cl \n{0}\n does not equal result from np\n{1}. Args was {3}"\
                                              .format(clres, npres, func.__name__, args)
-            tst = ((abs(clres-npres))<0.000001).all()
+            tst = ((abs(clres-npres))<0.00001).all()
         else:
-            tst = (abs(clres-npres))<0.000001
+            tst = (abs(clres-npres))<0.00001
         assert tst==True, "Error in func {2}.\n Result from cl \n{0}\n does not equal result from np\n{1}. Args was {3}"\
                           .format(clres, npres, func.__name__, args)
         return result

@@ -16,7 +16,8 @@ np.uint32.__name__:  "uint",
 np.uint64.__name__:  "ulong",
 np.float16.__name__: "half",
 np.float32.__name__: "float",
-np.float64.__name__: "double"}
+np.float64.__name__: "double",
+np.dtype('bool').name: "char"}
 
 operators = {
     'sub': '-',
@@ -178,6 +179,13 @@ class programs():
             ksource = ksourcetpl.render(cs=valsz)
             programcache[key] = cl.Program(self.ctx, ksource).build()
         return programcache[key]
+    def setif(self, valsz, dtype, idtype):
+        key = (dtype, idtype, 'setif',)
+        if not key in programcache.keys():
+            ksourcetpl = Template(clsrc.slicedefs.format(typemaps[dtype.name], typemaps[idtype.name], 0) + clsrc.setifsrc)
+            ksource = ksourcetpl.render(cs=valsz)
+            programcache[key] = cl.Program(self.ctx, ksource).build()
+        return programcache[key]
 
     def singlesms(self, *args):
         key = args+('singlesms',)
@@ -191,7 +199,6 @@ class programs():
             operator = operators[action]
             ksourcetpl = Template(clsrc.slicedefs.format(dtypecl, idtypecl, 0) + clsrc.singlesrc)
             ksource = ksourcetpl.render(action=action, operator=operator, idtype=idtypecl, neg=neg)
-            print(ksource)
             programcache[key] = cl.Program(self.ctx, ksource).build()
         return programcache[key]
 

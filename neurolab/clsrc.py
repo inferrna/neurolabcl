@@ -103,6 +103,25 @@ __kernel void setbyids(__global idtype *ids, __global dtype *data, __global dtyp
     % endif
 }
 """
+setifsrc = """
+__kernel void setif(__global idtype *ids, __global dtype *data, __global dtype *_value){
+    size_t gid0 = get_global_id(0);  //Addr inside block
+    dtype ires = data[gid0];
+    uint id = (uint) ids[gid0];
+    % if cs>1:
+    data[gid0] = select(ires, _value[gid0 % cs], id);
+    % elif cs==1:
+    __local dtype value;
+    if(get_local_id(0) == 0){
+        value = _value[0];
+    }
+    barrier(CLK_LOCAL_MEM_FENCE);
+    data[gid0] = select(ires, value, id);
+    % elif cs==0:
+    data[gid0] = select(ires, _value[gid0], id);;
+    % endif
+}
+"""
 
 signsrc = """
 __kernel void asign(__global dtype *inpt, __global dtype *outpt){

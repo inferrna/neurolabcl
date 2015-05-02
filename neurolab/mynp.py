@@ -19,7 +19,7 @@ mf = cl.mem_flags
 arngd = np.array([0])
 dtbool = np.dtype('bool')
 float_ = np.float32
-cl.tools.get_or_register_dtype(['bool'], dtype=np.dtype('bool'))
+cl.tools.get_or_register_dtype(['bool'], dtype=dtbool)
 
 @justtime
 def get_arng(size, dtype=np.int32):
@@ -259,7 +259,7 @@ class myclArray(clarray.Array):
             x, y, z = algorithm.copy_if(self.reshape((self.size,)),\
                                         "index[i]!=0",\
                                         # TODO: avoid type convert
-                                        [("index", index.reshape((index.size,)).astype(np.uint8))])
+                                        [("index", bool2int(index).reshape((index.size,)))])
             res = x[:y.get()]
         elif isinstance(index, tuple) or isinstance(index, slice):
             indices, newshape = self.createshapes(index)
@@ -301,7 +301,7 @@ class myclArray(clarray.Array):
             if isinstance(_vl, myclArray):
                 val = _vl
             elif type(_vl) in (int, float):
-                val = arr_from_np(np.array([_vl], dtype=self.dtype))
+                val = arr_from_np(np.array(_vl, dtype=self.dtype))
             elif isinstance(_vl, np.ndarray):
                 val = arr_from_np(_vl).astype(self.dtype)
             else:
@@ -310,20 +310,12 @@ class myclArray(clarray.Array):
         if isinstance(subscript, myclArray):
             value = fix_val(_value)
             if subscript.dtype == dtbool:
-                idxcl = get_arng(self.size)#clarray.arange(queue, 0, self.size, 1, dtype=np.int32)
-                x, y, z = algorithm.copy_if(idxcl, "index[i]!=false",\
-                                            # TODO: avoid type convert
-                                            [("index", subscript.reshape((subscript.size,)).astype(np.uint8))],\
-                                            preamble="#define bool int")
-                if y:
-                    res = x[:y.get()]
-                    self.reshape((self.size,))[res] = value
-                else:
-                    print("got bads x, y, z: ", x, y, z)
-                    print("got idxcl: \n", idxcl)
-                    print("got subscript: \n", subscript)
+                cs = 0 if value.size==self.size else value.size
+                programs.setif(cs, self.dtype, subscript.dtype)\
+                        .setif(queue, (self.size,), None, subscript.data, self.data, value.data)
             else:
                 #valsz, dtype, idtype
+                print("going setndbyids")
                 cs = int(np.prod(self.shape[1:]))
                 # need Assert subscript.size <= cs
                 programs.setndbyids(cs, self.dtype, subscript.dtype)\
@@ -450,6 +442,9 @@ def arr_from_np(nparr):
         nparr = np.concatenate(nparr)
     buf = myBuffer(ctx, mf.READ_WRITE| mf.COPY_HOST_PTR, hostbuf=nparr)
     return myclArray(queue, nparr.shape, nparr.dtype, data=buf)
+@justtime        
+def bool2int(arr):
+    return myclArray(queue, arr.shape, np.uint8, data=arr.data)
 
 class nprandom():
     def random(self, *args, **kwargs):

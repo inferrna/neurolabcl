@@ -100,7 +100,7 @@ def meta_add(arr, other, actnames, resdtype=None):
         elif arr.size == other.size:
             res = fallbackM(arr.reshape(arr.size), other.reshape(arr.size)).reshape(arr.shape)
         elif arr.shape[-other.ndim:] == other.shape:
-            print("arr.shape[-other.ndim:] == other.shape case")
+            #print("arr.shape[-other.ndim:] == other.shape case")
             if nores: result = empty(arr.shape, resdtype)
             s1 = np.prod(arr.shape[:-other.ndim])
             s2 = np.prod(other.shape)
@@ -315,7 +315,7 @@ class myclArray(clarray.Array):
                         .setif(queue, (self.size,), None, subscript.data, self.data, value.data)
             else:
                 #valsz, dtype, idtype
-                print("going setndbyids")
+                #print("going setndbyids")
                 cs = int(np.prod(self.shape[1:]))
                 # need Assert subscript.size <= cs
                 programs.setndbyids(cs, self.dtype, subscript.dtype)\

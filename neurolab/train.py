@@ -408,6 +408,7 @@ class TrainGD(Train):
         return g1, output
     
     def learn(self, net, grad):
+        print("self.lr == ", self.lr)
         for ln, layer in enumerate(net.layers):
             layer.np['w'] -= self.lr * grad[ln]['w']
             layer.np['b'] -= self.lr * grad[ln]['b']

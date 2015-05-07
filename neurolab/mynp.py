@@ -124,6 +124,9 @@ def meta_add(arr, other, actnames, resdtype=None):
                        odata)
             res = result
     else:
+        print("fallbackM with ", arr.dtype, type(other))
+        if type(other) in ['float', 'int']:
+            other = np.__dict__[type(other).__name__+'32'](other)
         res = fallbackM(arr, other)
     if not isinstance(res, myclArray):
         res.__class__ = myclArray

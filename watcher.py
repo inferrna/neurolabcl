@@ -36,7 +36,9 @@ class Watcher(object):
         if event!='line' or not self.enabled:
             return self.trace_command
         if self.check_condition():
+            print("Condition checked")
             if self.prev_st:
+                print("Change detected")
                 with open(self.log_file, 'ab') as f:
                     print("Value of",self.obj,".",self.attr,"changed!", file=f)
                     print("###### Line:", file=f)

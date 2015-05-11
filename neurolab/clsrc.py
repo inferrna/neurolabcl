@@ -2,6 +2,7 @@ slicedefs = """
 #define dtype {0} //Main datatype
 #define idtype {1} //Type for indexing
 #define PC {2} //Dimensions count
+#define ucond ulong
 """
 norecslicesrc = """
 uint slice{0}(uint id, __global int4 *params, const uint c)<%
@@ -107,7 +108,7 @@ setifsrc = """
 __kernel void setif(__global idtype *ids, __global dtype *data, __global dtype *_value){
     size_t gid0 = get_global_id(0);  //Addr inside block
     dtype ires = data[gid0];
-    uint id = (uint) ids[gid0];
+    ucond id = (ucond) ids[gid0];
     % if cs>1:
     data[gid0] = select(ires, _value[gid0 % cs], id);
     % elif cs==1:
@@ -128,7 +129,7 @@ __kernel void asign(__global dtype *inpt, __global dtype *outpt){
     uint gid = get_global_id(0);
     dtype linpt = inpt[gid];
     dtype res = copysign(1, linpt);
-    res = select(res, (dtype) 0, (uint)(linpt == (dtype)0));
+    res = select(res, (dtype) 0, (ucond)(linpt == (dtype)0));
     outpt[gid] = res; 
 }\n
 """

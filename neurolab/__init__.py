@@ -50,6 +50,7 @@ __version__ = '0.3.5'
 #                       4 - Beta, 5 - Production/Stable
 __status__ = '3 - Alpha'
 from . import mynp
+#import numpy as mynp
 
 from .tool import load
 from . import net

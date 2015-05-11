@@ -7,7 +7,6 @@ Functions of initialization  layers
 
 from neurolab import mynp  as np
 
-
 def init_rand(layer, min=-0.5, max=0.5, init_prop='w'):
     """
     Initialize the specified property of the layer

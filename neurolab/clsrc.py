@@ -2,7 +2,7 @@ slicedefs = """
 #define dtype {0} //Main datatype
 #define idtype {1} //Type for indexing
 #define PC {2} //Dimensions count
-#define ucond ulong
+#define ucond uint
 """
 norecslicesrc = """
 uint slice{0}(uint id, __global int4 *params, const uint c)<%

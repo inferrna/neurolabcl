@@ -18,7 +18,7 @@ Inf = np.Inf
 mf = cl.mem_flags
 arngd = np.array([0])
 dtbool = np.dtype('bool')
-float_ = np.float64
+float_ = np.float32
 cl.tools.get_or_register_dtype(['bool'], dtype=dtbool)
 
 @justtime
@@ -125,7 +125,7 @@ def meta_add(arr, other, actnames, resdtype=None):
             res = result
     else:
         #print("fallbackM with ", arr.dtype, type(other))
-        if type(other) in ['float', 'int']:
+        if type(other).__name__ in ['float', 'int']:
             other = np.__dict__[type(other).__name__+'32'](other)
         res = fallbackM(arr, other)
     if not isinstance(res, myclArray):

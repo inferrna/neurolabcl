@@ -264,12 +264,12 @@ class myclArray(clarray.Array):
                                         # TODO: avoid type convert
                                         [("index", bool2int(index).reshape((index.size,)))])
             res = x[:y.get()]
-        elif isinstance(index, tuple) or isinstance(index, slice):
-            indices, newshape = self.createshapes(index)
-            program = programs.sliceget(self.dtype, len(self.shape))
-            res = empty(newshape, self.dtype)
-            program.mislice(queue, (res.size,), None, indices.data, self.data, res.data)
-            return res
+        #elif isinstance(index, tuple) or isinstance(index, slice):
+        #    indices, newshape = self.createshapes(index)
+        #    program = programs.sliceget(self.dtype, len(self.shape))
+        #    res = empty(newshape, self.dtype)
+        #    program.mislice(queue, (res.size,), None, indices.data, self.data, res.data)
+        #    return res
         elif isinstance(index, myclArray) and self.ndim>0:
             program = programs.getndbyids(self.dtype, index.dtype)
             resshape = (index.size,) + self.shape[1:] if index.size>1 else self.shape[1:]

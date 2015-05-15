@@ -189,6 +189,7 @@ class TrainWTA(Train):
             out = net.step(inp)
             winner = np.argmax(out)
             d = layer.last_dist
+            print("TrainWTA learn here")
             layer.np['w'][winner] += self.lr * d[winner] * (inp - layer.np['w'][winner])
         
         return None
@@ -220,6 +221,7 @@ class TrainCWTA(TrainWTA):
             winner = np.argmax(out)
             d = layer.last_dist #TODO:^^_^^
             layer.np['conscience'][winner] += 1
+            print("TrainCWTA learn here")
             layer.np['w'][winner] += self.lr * d[winner] * (inp - layer.np['w'][winner])
 
         layer.np['conscience'].fill(1.0)
@@ -410,6 +412,7 @@ class TrainGD(Train):
     def learn(self, net, grad):
         print("self.lr == ", self.lr)
         for ln, layer in enumerate(net.layers):
+            print("TrainGD learn here")
             layer.np['w'] -= self.lr * grad[ln]['w']
             layer.np['b'] -= self.lr * grad[ln]['b']
         return None
@@ -450,6 +453,7 @@ class TrainGD2(TrainGD):
         return g2, output
     
     def learn(self, net, grad):
+        print("TrainGD2 learn here")
         self.x -= self.lr * grad
 
         
@@ -490,6 +494,7 @@ class TrainGDM(TrainGD):
         for ln, layer in enumerate(net.layers):
             self.dw[ln] = mc * self.dw[ln] + ((1 - mc) * lr) * grad[ln]['w'] 
             self.db[ln] = mc * self.db[ln] + ((1 - mc) * lr) * grad[ln]['b']
+            print("TrainGDM learn here")
             layer.np['w'] -= self.dw[ln]
             layer.np['b'] -= self.db[ln]
         return None
@@ -535,6 +540,7 @@ class TrainGDA(TrainGD):
         #print 'GDA.learn'
         if len(self.err) > 1:
             f = self.err[-1] / self.err[-2]
+            print("TrainGDA learn here")
             if f > self.max_perf_inc:
                 self.lr *= self.lr_dec
             elif f < 1:
@@ -632,10 +638,13 @@ class TrainRprop(TrainGD2):
         self.rate =  np.zeros(size) + lr
     
     def learn(self, net, grad):
-    
+        print("TrainRprop learn here")
+        print("TrainRprop before:\n self.rate = {0}\nself.x = {1}\nself.grad_prev = {2}".format(self.rate, self.x, self.grad_prev))
         prod = grad * self.grad_prev
         # Sign not change
         ind = prod > 0 
+        print("Parameters is:\ngrad = {0}\nind={1}\nself.rate_inc = {2}\nself.rate_dec = {3}\nself.rate_max = {4}\nself.rate_min = {5}"\
+              .format(grad, ind, self.rate_inc, self.rate_dec, self.rate_max, self.rate_min))
         self.rate[ind] *= self.rate_inc
         # Sign change
         ind = prod < 0
@@ -646,6 +655,7 @@ class TrainRprop(TrainGD2):
         
         self.x -= self.rate * np.sign(grad)
         self.grad_prev = grad
+        print("TrainRprop after:\n self.rate = {0}\nself.x = {1}\nself.grad_prev = {2}".format(self.rate, self.x, self.grad_prev))
         return None
 
 class TrainRpropM(TrainRprop):
@@ -682,6 +692,7 @@ class TrainRpropM(TrainRprop):
     
     def learn(self, net, grad):
     
+        print("TrainRpropM learn here")
         prod = grad * self.grad_prev
         # Sign not change
         ind = prod > 0 

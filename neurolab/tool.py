@@ -230,8 +230,18 @@ def ff_grad(net, input, target):
     for inp, tar in zip(input, target):
         out = net.step(inp)
         ff_grad_step(net, out, tar, grad)
+        #import sys, traceback
+        #traceback.print_stack()
+        #raise(ValueError("Exit 1 for live {0}".format(grad_flat)))
         output[i] = out
         i += 1
+
+    #Dirty hack
+    st = 0
+    for i, l in enumerate(net.layers):
+        for k, v in l.np.items():
+            grad_flat[st: st + v.size] = grad[i][k].reshape(v.size)
+            st += v.size
     return grad, grad_flat, output
 
 

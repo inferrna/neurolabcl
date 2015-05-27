@@ -87,6 +87,17 @@ class programs():
             programcache[key] = cl.Program(self.ctx, ksource).build()
         return programcache[key]
 
+    def delete(self, *args):
+        key = args+('delete',)
+        if not key in programcache.keys():
+            ndims, dimr, rc, dtype, olddims, newdims = args
+            dtypecl = typemaps[dtype.name]
+            ksourcetpl = Template(clsrc.slicedefs.format(dtypecl, dtypecl, 0) + clsrc.deletesrc)
+            ksource = ksourcetpl.render(ndims=ndims, dimr=dimr, rc=rc, olddims=olddims, newdims=newdims)
+            print(ksource)
+            programcache[key] = cl.Program(self.ctx, ksource).build()
+        return programcache[key]
+
     def singleset(self, dtype):
         key = (dtype, 'singleset',)
         if not key in programcache.keys():

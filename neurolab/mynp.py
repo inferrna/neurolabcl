@@ -279,6 +279,12 @@ class myclArray(clarray.Array):
         clolddims.release()
         return result
 
+    @property 
+    def T(self):
+        newdims = list(range(self.ndim))
+        newdims[-1] = 0
+        newdims[0] = self.ndim-1
+        return self.transpose(*newdims)
 
     def __setitem__(self, subscript, _value):
         def fix_val(_vl):
@@ -441,6 +447,26 @@ class nprandom():
 
 random = myrandom()
 
+def delete(_arr, obj, axis=None):
+    if type(obj) == int:
+        rc = 1
+        removed = np.uint32(obj)
+    else:
+        rc = len(obj)
+        removed = array(obj, dtype=np.uint32).data
+    if not axis:
+        newshape = (_arr.size - rc,)
+        arr = _arr.reshape(arr.size)
+    else:
+        arr = _arr
+        newshape = list(_arr.shape)
+        newshape[axis] = newshape[axis]-rc
+    dst = empty(shape=newshape, dtype=arr.dtype)
+    dimr = int(axis)
+    prg = programs.delete(arr.ndim, dimr, rc, arr.dtype, str(arr.shape)[1:-1], str(newshape)[1:-1])
+    #exit()
+    prg.delete(queue, (dst.size,), None, removed, arr.data, dst.data)
+    return dst
 #def argmin(*args, **kwargs):
 #    return arr_from_np(np.argmin(*args, **kwargs))
 

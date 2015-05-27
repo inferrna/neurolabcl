@@ -25,6 +25,8 @@ uint slice{0}(uint id, __global int4 *params, const uint c)<%
     return  groupid+groupstart;
 %>
 """
+
+
 slicesrc = """
 uint slice(uint id, __global int4 *params, const uint c){
     int N = params[c].s0;
@@ -67,6 +69,55 @@ __kernel void mislicesingle(__global int4 *params, __global dtype *data, __globa
     data[slice(gid, params, PC-1)*${cs}+gid1] = value[gid1];
 }
 """
+
+deletesrc = """
+__kernel void delete(
+% if rc > 1:
+                     __global uint *removed,  //Removed positions fom spec dimension
+% else:
+                     uint removed,            //Removed position fom spec dimension
+% endif
+                     __global dtype *src,
+                     __global dtype *dst
+){
+    uint newdims[${ndims}] = {${newdims}}; //New shape
+    uint olddims[${ndims}] = {${olddims}}; //Old shape
+    //find positions in new dims
+    uint oldpos[${ndims}];
+    uint gid = get_global_id(0);
+    uint newgid = gid;
+    int mult = 1;
+    uint idx = 0;
+    int i;
+    for(i = ${ndims-1}; i>${dimr}; i--){
+        oldpos[i] = newgid % newdims[i]; //same as currpos
+        newgid = newgid/newdims[i];
+    }
+    i = ${dimr};
+    oldpos[i] = newgid % newdims[i];
+    newgid = newgid/newdims[i];
+% if rc > 1:
+    uint op = oldpos[i];
+    for(int j=0; j<${rc}; j++){
+        oldpos[i] += (uint) ((removed[j]) - j <= op); //New position is shifted, substract j to compensate
+    }
+% else:
+    oldpos[i] += (uint) (removed <= oldpos[i]); //New position is shifted, substract j to compensate
+% endif
+    for(i=${dimr-1}; i>=0; i--){
+        oldpos[i] = newgid % newdims[i];
+        newgid = newgid/newdims[i];
+    }
+    for(i=${ndims - 1}; i>=0; i--){
+        idx += oldpos[i]*mult;
+        mult *=  olddims[i];
+    }
+    dst[gid] = src[idx]; 
+    //map it to position in old dims
+    //and get it
+}
+"""
+
 getbyidssrc = """
 __kernel void getbyids(__global idtype *ids, __global dtype *data, __global dtype *result){
     size_t gid0 = get_global_id(0);  //Addr inside block

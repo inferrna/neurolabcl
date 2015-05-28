@@ -94,7 +94,6 @@ class programs():
             dtypecl = typemaps[dtype.name]
             ksourcetpl = Template(clsrc.slicedefs.format(dtypecl, dtypecl, 0) + clsrc.deletesrc)
             ksource = ksourcetpl.render(ndims=ndims, dimr=dimr, rc=rc, olddims=olddims, newdims=newdims)
-            print(ksource)
             programcache[key] = cl.Program(self.ctx, ksource).build()
         return programcache[key]
 

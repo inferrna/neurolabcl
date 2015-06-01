@@ -20,5 +20,5 @@ while cost>0:
     costTest=nt.costTotal(False, nn, xTest, yTest, lamb)
     delta=nt.backpropagation(False, nn, xTrain, yTrain, lamb)
     nn['theta']=[nn['theta'][i]-alf*delta[i] for i in range(0,len(nn['theta']))]
-    print('Train cost ', cost[0,0], 'Test cost ', costTest[0,0])
+    print('Train cost ', cost, 'Test cost ', costTest)
     print(nt.runAll(nn, xTest))

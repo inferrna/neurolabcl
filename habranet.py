@@ -18,7 +18,7 @@ class network:
         logFunc = self.logisticFunction()
         for i in range(1, len(nn['structure'])): # for each layer except the input
             a[i-1] = np.c_[ np.ones(m), a[i-1]]; # add bias column to the previous matrix of activation functions
-            z.append(a[i-1]*nn['theta'][i].T) # for all neurons in current layer multiply corresponds neurons
+            z.append(np.dot(a[i-1], nn['theta'][i].T)) # for all neurons in current layer multiply corresponds neurons
             # in previous layers by the appropriate weights and sum the productions
             a.append(logFunc(z[i])) # apply activation function for each value
         nn['z'] = z
@@ -33,7 +33,7 @@ class network:
         logFunc = self.logisticFunction()
         for i in range(1, len(nn['structure'])):
             a[i-1]=np.vstack(([1], a[i-1]))
-            z.append(nn['theta'][i]*a[i-1])
+            z.append(np.dot(nn['theta'][i], a[i-1]))
             a.append(logFunc(z[i]))
         nn['z'] = z
         nn['a'] = a
@@ -54,7 +54,7 @@ class network:
     def cost(self, h, y):
         logH=np.log(h)
         log1H=np.log(1-h)
-        cost=-1*y.T*logH-(1-y.T)*log1H #transpose y for matrix multiplication
+        cost = np.dot(-1*y.T, logH) - np.dot((1-y.T), log1H) #transpose y for matrix multiplication
         return cost.sum(axis=0).sum(axis=1) # sum matrix of costs for each output neuron and input vector
         
     def regul(self, theta):
@@ -85,9 +85,11 @@ class network:
                 if i>1: # we can not calculate delta[0] because we don't have theta[0] (and even we don't need it)
                     z = zLoc[i-1][n]
                     z = np.c_[ [[1]], z ] #add one for correct matrix multiplication
-                    delta[i]=np.multiply(thetaLoc[i].T*delta[i+1],derFunct(z).T)
+                    delta[i]=np.multiply(np.dot(thetaLoc[i].T, delta[i+1]), derFunct(z).T)
                     delta[i]=delta[i][1:]
-                thetaDelta[i] = thetaDelta[i] + delta[i+1]*aLoc[i-1][n]
+                #print(thetaDelta[i], delta[i+1].shape, aLoc[i-1][n], '\n')
+                thetaDelta[i] = thetaDelta[i] + np.dot(delta[i+1], aLoc[i-1][n].reshape((1,) + aLoc[i-1][n].shape)) #delta[i+1]*aLoc[i-1][n]
+                #exit()
 
         for i in range(1, len(thetaDelta)):
             thetaDelta[i]=thetaDelta[i]/m
@@ -111,6 +113,8 @@ class network:
         rolled=[arr[0]]
         shift=1
         for i in range(1,len(structure)):
+            print(type(structure[i]), " * ", type(structure[i-1]+1))
+            exit()
             temparr=copy.deepcopy(arr[shift:shift+structure[i]*(structure[i-1]+1)])
             temparr.shape=(structure[i],structure[i-1]+1)
             rolled.append(np.matrix(temparr))

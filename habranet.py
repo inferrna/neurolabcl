@@ -1,5 +1,5 @@
 import copy
-import numpy as np
+import mynp as np
 import random as rd
 
 class network:
@@ -7,7 +7,7 @@ class network:
     def create(self, layers):
         theta=[0]
         for i in range(1, len(layers)): # for each layer from the first (skip zero layer!)
-            theta.append(np.array(np.random.uniform(-1, 1, (layers[i], layers[i-1]+1)))) # create nxM+1 matrix (+bias!) with random floats in range [-1; 1]
+            theta.append(np.random.uniform(-1, 1, (layers[i], layers[i-1]+1))) # create nxM+1 matrix (+bias!) with random floats in range [-1; 1]
         nn={'theta':theta,'structure':layers}
         return nn
     

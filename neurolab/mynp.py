@@ -441,9 +441,11 @@ class myrandom():
 
 class vectorize(np.lib.function_base.vectorize):
     def __init__(self, *args, **kwargs):
-        numpy.lib.function_base.vectorize.__init__(self, *args, **kwargs)
+        np.lib.function_base.vectorize.__init__(self, *args, **kwargs)
     def __call__(self, *args, **kwargs):
         return arr_from_np(np.lib.function_base.vectorize.__call__(self, *args, **kwargs))
+
+ndarray = myclArray
 
 @justtime        
 def arr_from_np(nparr):
@@ -471,6 +473,13 @@ class nprandom():
         return arr_from_np( np.random.randn(*args, **kwargs).astype(float_) )
 
 random = myrandom()
+
+@chkfunc
+def ones(shape, dtype=None, order='C'):
+    if not dtype: dtype = float_
+    res = myclArray(queue, shape, dtype)
+    res.fill(1)
+    return res
 
 @chkfunc
 def delete(_arr, obj, axis=None):
@@ -763,7 +772,7 @@ def array(*args, **kwargs):
     return arr_from_np( np.array(*args, **kwargs) )
 
 @chkfunc
-def asrray(*args, **kwargs):
+def asarray(*args, **kwargs):
     if not 'dtype' in kwargs.keys():
         kwargs['dtype'] = float_
     return arr_from_np( np.asarray(*args, **kwargs) )

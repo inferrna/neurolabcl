@@ -453,6 +453,7 @@ def arr_from_np(nparr):
         nparr = np.concatenate(nparr)
     buf = myBuffer(ctx, mf.READ_WRITE| mf.COPY_HOST_PTR, hostbuf=nparr)
     return myclArray(queue, nparr.shape, nparr.dtype, data=buf)
+
 @justtime        
 def bool2int(arr):
     return myclArray(queue, arr.shape, np.uint8, data=arr.data)
@@ -509,7 +510,9 @@ def vstack(arrays):
 
 
 @chkfunc
-def concatenate(arrays, axis=0):
+def concatenate(_arrays, axis=0):
+    arrays = [array(a) for a in _arrays]
+    print([a.strides for a in arrays], axis)
     res = clarray.concatenate(arrays, axis, queue)#np.concatenate(*args, **kwargs)
     res.__class__ = myclArray
     res.reinit()
@@ -767,6 +770,8 @@ def zeros(shape, dtype=float_, order='C'):
 
 @chkfunc
 def array(*args, **kwargs):
+    if isinstance(args[0], myclArray):
+        return args[0]
     if not 'dtype' in kwargs.keys():
         kwargs['dtype'] = float_
     return arr_from_np( np.array(*args, **kwargs) )

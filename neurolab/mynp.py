@@ -509,13 +509,26 @@ def vstack(arrays):
     return concatenate(arrays, axis=0)
 
 
-@chkfunc
+#@chkfunc
 def concatenate(_arrays, axis=0):
     arrays = [array(a) for a in _arrays]
-    print([a.strides for a in arrays], axis)
-    res = clarray.concatenate(arrays, axis, queue)#np.concatenate(*args, **kwargs)
-    res.__class__ = myclArray
-    res.reinit()
+    print([a.shape for a in arrays], axis)
+    islices = []
+    last = 0
+    afterc = arrays[0].ndim - axis - 1
+    for a in arrays:
+        appendix = a.shape[axis]
+        islices.append( (slice(0, None, 1),) * axis + (slice(last, last + appendix, 1),) + (slice(0, None, 1),) * afterc )
+        last += appendix
+    print(islices)
+    newshape = arrays[0].shape[:axis] + (last,) + arrays[0].shape[(axis+1):]
+    print(newshape)
+    res = empty(newshape, arrays[0].dtype)
+    for slc, arr in zip(islices, arrays):
+        res[slc] = arr
+    #res = clarray.concatenate(arrays, axis, queue)#np.concatenate(*args, **kwargs)
+    #res.__class__ = myclArray
+    #res.reinit()
     return res
 
 @chkfunc

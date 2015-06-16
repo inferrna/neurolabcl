@@ -61,10 +61,10 @@ class network:
         
     def regul(self, theta):
         reg=0
-        thetaLocal=copy.deepcopy(theta)
+        thetaLocal = theta.copy()# if type(theta) == np.ndarray else copy.deepcopy(theta)
         for i in range(1,len(thetaLocal)):
             thetaLocal[i]=np.delete(thetaLocal[i],0,1) # delete bias connection
-            thetaLocal[i]=np.power(thetaLocal[i], 2) # square the values because they can be negative
+            thetaLocal[i]*=thetaLocal[i] #np.power(thetaLocal[i], 2) # square the values because they can be negative
             reg+=thetaLocal[i].sum() # sum at first rows, than columns
         return reg
         
@@ -73,13 +73,13 @@ class network:
         thetaDelta = [0]*(layersNumb)
         m=len(X)
         #calculate matrix of outpit values for all input vectors X
-        hLoc = copy.deepcopy(self.runAll(nn, X))
+        hLoc = self.runAll(nn, X).copy()
         yLoc = np.array(y)
-        thetaLoc = copy.deepcopy(nn['theta'])
-        derFunct=np.vectorize(lambda x: (1/(1+np.exp(-x)))*(1-(1/(1+np.exp(-x)))) )
+        thetaLoc = nn['theta'].copy()
+        derFunct = np.vectorize( lambda x: (1/(1+np.exp(-x)))*(1-(1/(1+np.exp(-x)))) )
         
-        zLoc = copy.deepcopy(nn['z'])
-        aLoc = copy.deepcopy(nn['a'])
+        zLoc = nn['z'].copy()
+        aLoc = nn['a'].copy()
         for n in range(0, len(X)):
             delta = [0]*(layersNumb+1)  #fill list with zeros
             delta[len(delta)-1] = (hLoc[n].T-yLoc[n].T) #calculate delta of error of output layer
@@ -87,9 +87,9 @@ class network:
             for i in range(layersNumb-1, 0, -1):
                 if i>1: # we can not calculate delta[0] because we don't have theta[0] (and even we don't need it)
                     z = zLoc[i-1][n]
-                    z = np.c_[ [[1]], z.reshape((1,)*(2-z.ndim) + z.shape) ] #add one for correct matrix multiplication
-                    delta[i]=np.multiply(np.dot(thetaLoc[i].T, delta[i+1]).reshape(-1, 1), derFunct(z).T)
-                    delta[i]=delta[i][1:]
+                    z = np.concatenate( ([[1]], z.reshape((1,)*(2-z.ndim) + z.shape),), axis=1) #add one for correct matrix multiplication
+                    delta[i] = np.dot(thetaLoc[i].T, delta[i+1]).reshape(-1, 1) * derFunct(z).T
+                    delta[i] = delta[i][1:]
                 #print(thetaDelta[i], delta[i+1].shape, aLoc[i-1][n], '\n')
                 #print(np.dot(thetaLoc[i].T, delta[i+1]).shape, derFunct(z).T.shape, '\n')
                 #print(delta[i+1].shape, aLoc[i-1][n].shape )
@@ -120,7 +120,7 @@ class network:
         for i in range(1,len(structure)):
             print(type(structure[i]), " * ", type(structure[i-1]+1))
             exit()
-            temparr=copy.deepcopy(arr[shift:shift+structure[i]*(structure[i-1]+1)])
+            temparr=arr[shift:shift+structure[i]*(structure[i-1]+1)].copy()
             temparr.shape=(structure[i],structure[i-1]+1)
             rolled.append(np.array(temparr)) #NEED COMPARE WITH MATRIX
             print(rolled[-1].shape)

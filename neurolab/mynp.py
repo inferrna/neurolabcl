@@ -555,7 +555,7 @@ def dot(a, b, out=None):
 
 @chkfunc
 def log(arr):
-    res = clmath.log(array, queue=queue)
+    res = clmath.log(arr, queue=queue)
     res.__class__ = myclArray
     res.reinit()
     return res

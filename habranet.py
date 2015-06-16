@@ -19,6 +19,8 @@ class network:
         for i in range(1, len(nn['structure'])): # for each layer except the input
             a[i-1] = np.concatenate((np.ones((m,1,)), a[i-1]), axis=1); # add bias column to the previous matrix of activation functions
             z.append(np.dot(a[i-1], nn['theta'][i].T)) # for all neurons in current layer multiply corresponds neurons
+            #print("Shapes is ", a[i-1].shape, nn['theta'][i].T.shape)
+            #print("Result is ", z[-1].shape)
             # in previous layers by the appropriate weights and sum the productions
             a.append(logFunc(z[i])) # apply activation function for each value
         nn['z'] = z

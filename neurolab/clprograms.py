@@ -223,6 +223,7 @@ class programs():
         key = args+('dot',)
         if not key in programcache.keys():
             dtype, nums = args
-            ksource = clsrc.slicedefs.format(typemaps[dtype.name], 0, nums) + clsrc.smalldotsrc;
+            ksource = clsrc.slicedefs.format(typemaps[dtype.name], 0, nums) + clsrc.doubledotsrc;
             programcache[key] = cl.Program(self.ctx, ksource).build()
+            #print(ksource)
         return programcache[key]

@@ -297,6 +297,11 @@ class myclArray(clarray.Array):
         clolddims.release()
         return result
 
+    @property 
+    def T(self):
+        args = [self.ndim-1, 0]
+        return self.transpose(*args)
+
 
     @chkvoidmethod
     def __setitem__(self, subscript, _value):
@@ -509,10 +514,10 @@ def vstack(arrays):
     return concatenate(arrays, axis=0)
 
 
-#@chkfunc
+@chkfunc
 def concatenate(_arrays, axis=0):
     arrays = [array(a) for a in _arrays]
-    print([a.shape for a in arrays], axis)
+    #print([a.shape for a in arrays], axis)
     islices = []
     last = 0
     afterc = arrays[0].ndim - axis - 1
@@ -520,9 +525,9 @@ def concatenate(_arrays, axis=0):
         appendix = a.shape[axis]
         islices.append( (slice(0, None, 1),) * axis + (slice(last, last + appendix, 1),) + (slice(0, None, 1),) * afterc )
         last += appendix
-    print(islices)
+    #print(islices)
     newshape = arrays[0].shape[:axis] + (last,) + arrays[0].shape[(axis+1):]
-    print(newshape)
+    #print(newshape)
     res = empty(newshape, arrays[0].dtype)
     for slc, arr in zip(islices, arrays):
         res[slc] = arr
@@ -533,10 +538,12 @@ def concatenate(_arrays, axis=0):
 
 @chkfunc
 def dot(a, b, out=None):
-    assert a.shape[-1] == b.size, "Sizes does not match, {0} vs {1}".format(a.shape[-1], b.size)
+    assert a.shape[-1] == b.shape[0], "Sizes does not match, {0} vs {1}".format(a.shape[-1], b.shape[0])
+    bsz = b.shape[1] if b.ndim==2 else 1
     prg = programs.dot(a.dtype, a.shape[-1])
-    res = empty(a.shape[:-1], dtype=a.dtype)
-    prg.midot(queue, (res.size,), None, a.data, b.data, res.data)
+    reshape = (int(a.shape[0]), int(bsz),)
+    res = empty(reshape, dtype=a.dtype)
+    prg.midot(queue, reshape, None, a.data, b.data, res.data)
     #TODO: work with out
     #_res = clarray.dot(a, b)#np.dot(*args, **kwargs)
     #print("Dot result")

@@ -316,15 +316,16 @@ __kernel void prg(__global dtype *data, __global idtype *result, __global dtype 
 
 doubledotsrc = """
 __kernel void midot(__global dtype *data, __global dtype *gparam, __global dtype *result){
-    uint gid0 = get_global_id(0); //Addressing data
-    uint gid1 = get_global_id(1); //Adressing multiplier
-    uint gs0 = get_global_size(0);//Count of result elements in bank
-    uint sgd0 = gid0*PC;          //Data shift
-    uint sgd1 = gid1*PC;          //Multiplier shift
-    uint did = gid1*gs0 + gid0;   //Result address
+    uint gid0 = get_global_id(0);  //Addressing data
+    uint gid1 = get_global_id(1);  //Adressing multiplier
+    uint gs0 = get_global_size(0); //Count of data banks
+    uint gs1 = get_global_size(1); //Count of multiplier banks
+    uint sgd0 = gid0*PC;           //Data shift
+    uint sgd1 = gid1*PC;           //Multiplier shift
+    uint did = gid0*gs1 + gid1;    //Result address
     dtype res = 0;
     for(uint i=0; i<PC; i++){
-        res += data[sgd0+i] * gparam[sgd1+i];
+        res += data[sgd0+i] * gparam[gid1+i*gs1];
     }
     result[did] = res;
 }

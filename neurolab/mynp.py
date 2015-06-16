@@ -552,7 +552,13 @@ def dot(a, b, out=None):
     #res = _res#myclArray(queue, _res.shape, _res.dtype, data=_res.data)
     #res.reinit()
     return res
-    
+
+@chkfunc
+def log(arr):
+    res = clmath.log(array, queue=queue)
+    res.__class__ = myclArray
+    res.reinit()
+    return res
 
 @chkfunc
 def floor(a, out=None):

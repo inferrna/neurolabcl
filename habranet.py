@@ -1,5 +1,5 @@
 import copy
-import mynp as np
+import numpy as np
 import random as rd
 
 class network:
@@ -42,7 +42,7 @@ class network:
         return a[len(nn['structure'])-1]
         
     def logisticFunction(self):
-        return np.vectorize(lambda x: 1/(1+np.exp(-x)))
+        return lambda x: 1/(1+np.exp(-x))
         
     def costTotal(self, theta, nn, X, y, lamb):
         m = len(X)

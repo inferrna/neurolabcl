@@ -6,8 +6,8 @@ from pyopencl.elementwise import ElementwiseKernel
 ctx = np.ctx
 
 multiply = ElementwiseKernel(ctx,
-           "float *x, float *y, float *z",
-           "z[i] = x[i] * y[i]",
+           "float *a, float *b, float *c",
+           "c[i] = z[i] * b[i]",
            "multiplication")
 
 x = np.linspace(0, 1000000, dtype=np.float_)

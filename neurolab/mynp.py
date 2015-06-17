@@ -446,9 +446,12 @@ class myrandom():
 
 class vectorize():
     def __init__(self, arguments, operation):
-        self.prg = cl.elementwise.ElementwiseKernel(ctx, arguments, operation, name="kernel", preamble="", options=[])
+        self.prg = cl.elementwise.ElementwiseKernel(ctx, arguments, operation, name="program", preamble="", options=[])
     def __call__(self, *args):
-        return self.prg(*args)
+        res = empty(args[0].shape, args[0].dtype)
+        args = args + (res,)
+        self.prg(*args)
+        return res
 
 ndarray = myclArray
 

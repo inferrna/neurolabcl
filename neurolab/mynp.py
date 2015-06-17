@@ -360,6 +360,22 @@ class myclArray(clarray.Array):
 
 
     @chkmethod
+    def copy(self):
+        if not self.data.offset:
+            res = clarray.Array.copy(self)
+            if not isinstance(res, myclArray):
+                res.__class__ = myclArray
+                res.reinit()
+            return res
+        else:
+            res = empty(self.shape, self.dtype)
+            programs.singleset(self.dtype)\
+                    .prg(queue, (res.size,), None, res.data, self.base_data, np.int32(self.data.offset), global_offset=(0,))
+            return res
+
+        
+
+    @chkmethod
     def max(*args, **kwargs):
         a = args[0]
         if a.ndim==0 or not 'axis' in kwargs.keys():

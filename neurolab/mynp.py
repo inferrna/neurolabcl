@@ -360,7 +360,7 @@ class myclArray(clarray.Array):
 
 
     @chkmethod
-    def copy(self):
+    def _copy(self):
         if not self.data.offset:
             res = clarray.Array.copy(self)
             if not isinstance(res, myclArray):
@@ -556,7 +556,9 @@ def concatenate(_arrays, axis=0):
     return res
 
 @chkfunc
-def dot(a, b, out=None):
+def dot(_a, _b, out=None):
+    a = array(_a)
+    b = array(_b)
     assert a.shape[-1] == b.shape[0], "Sizes does not match, {0} vs {1}".format(a.shape[-1], b.shape[0])
     bsz = b.shape[1] if b.ndim==2 else 1
     prg = programs.dot(a.dtype, a.shape[-1])
@@ -816,7 +818,7 @@ def zeros(shape, dtype=float_, order='C'):
 @chkfunc
 def array(*args, **kwargs):
     if isinstance(args[0], myclArray):
-        if args[0].data.offset: return args[0].copy()
+        if args[0].offset: return args[0].copy()
         else: return args[0]
     if not 'dtype' in kwargs.keys():
         kwargs['dtype'] = float_

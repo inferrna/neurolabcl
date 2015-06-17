@@ -83,7 +83,7 @@ class network:
         aLoc = nn['a'].copy()
         for n in range(0, len(X)):
             delta = [0]*(layersNumb+1)  #fill list with zeros
-            delta[len(delta)-1] = (hLoc[n].T-yLoc[n].T) #calculate delta of error of output layer
+            delta[len(delta)-1] = (hLoc[n] - yLoc[n]).T #calculate delta of error of output layer
             delta[len(delta)-1] = delta[len(delta)-1].reshape(1, -1)
             for i in range(layersNumb-1, 0, -1):
                 if i>1: # we can not calculate delta[0] because we don't have theta[0] (and even we don't need it)

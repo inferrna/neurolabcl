@@ -800,7 +800,8 @@ def zeros(shape, dtype=float_, order='C'):
 @chkfunc
 def array(*args, **kwargs):
     if isinstance(args[0], myclArray):
-        return args[0]
+        if args[0].data.offset: return args[0].copy()
+        else: return args[0]
     if not 'dtype' in kwargs.keys():
         kwargs['dtype'] = float_
     return arr_from_np( np.array(*args, **kwargs) )

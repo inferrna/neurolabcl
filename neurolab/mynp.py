@@ -444,11 +444,11 @@ class myrandom():
         res.reinit()
         return res#myclArray(queue, _res.shape, _res.dtype, data=_res.data)
 
-class vectorize(np.lib.function_base.vectorize):
-    def __init__(self, *args, **kwargs):
-        np.lib.function_base.vectorize.__init__(self, *args, **kwargs)
-    def __call__(self, *args, **kwargs):
-        return arr_from_np(np.lib.function_base.vectorize.__call__(self, *args, **kwargs))
+class vectorize():
+    def __init__(self, arguments, operation):
+        self.prg = cl.elementwise.ElementwiseKernel(ctx, arguments, operation, name="kernel", preamble="", options=[])
+    def __call__(self, *args):
+        return self.prg(*args)
 
 ndarray = myclArray
 

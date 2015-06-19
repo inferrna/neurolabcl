@@ -667,7 +667,10 @@ def linspace(start, stop, num=50, endpoint=True, retstep=False, dtype=float_):
 
 @chkfunc
 def arange(start, stop, dtype=float_):
-    return clarray.arange(queue, start, stop, 1, dtype=dtype)
+    res = clarray.arange(queue, start, stop, 1, dtype=dtype)
+    res.__class__ = myclArray
+    res.reinit()
+    return res
 
 @chkfunc
 def min(a):

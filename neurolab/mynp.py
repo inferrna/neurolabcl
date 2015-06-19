@@ -359,7 +359,6 @@ class myclArray(clarray.Array):
         #return self
 
 
-    @chkmethod
     def _copy(self):
         if not self.data.offset:
             res = clarray.Array.copy(self)
@@ -666,6 +665,9 @@ def linspace(start, stop, num=50, endpoint=True, retstep=False, dtype=float_):
     res.reinit()
     return res
 
+@chkfunc
+def arange(start, stop, dtype=float_):
+    return clarray.arange(queue, start, stop, 1, dtype=dtype)
 
 @chkfunc
 def min(a):

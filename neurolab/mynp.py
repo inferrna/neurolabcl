@@ -359,8 +359,8 @@ class myclArray(clarray.Array):
         #return self
 
 
-    def _copy(self):
-        if not self.data.offset:
+    def copy(self):
+        if not self.offset:
             res = clarray.Array.copy(self)
             if not isinstance(res, myclArray):
                 res.__class__ = myclArray
@@ -369,7 +369,7 @@ class myclArray(clarray.Array):
         else:
             res = empty(self.shape, self.dtype)
             programs.singleset(self.dtype)\
-                    .prg(queue, (res.size,), None, res.data, self.base_data, np.int32(self.data.offset), global_offset=(0,))
+                    .prg(queue, (res.size,), None, res.data, self.base_data, np.int32(self.offset), global_offset=(0,))
             return res
 
         

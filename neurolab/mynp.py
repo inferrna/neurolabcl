@@ -7,6 +7,7 @@ import clsrc
 import clprograms
 from checker import justtime,  chkvoidmethod, chkmethod, chkfunc, backtonp_voidmethod, backtonp_method, backtonp_func
 from builtins import sum as bsum
+from pyopencl._cl import Buffer as myBuffer
 
 ctx = cl.create_some_context()
 queue = cl.CommandQueue(ctx)
@@ -25,15 +26,18 @@ cl.tools.get_or_register_dtype(['bool'], dtype=dtbool)
 def get_arng(size, dtype=np.int32):
     return clarray.arange(queue, 0, size, 1, dtype=dtype)
 
-class myBuffer(cl._cl.Buffer):
-    def __init__(self, *args, **kwargs):
-        cl._cl.Buffer.__init__(self, *args, **kwargs)
-        self.nowners = 0
-    def __del__(self):
-        self.nowners -= 1
-        if self.nowners == 0:
-            #print("released", self.size, "bytes directly")
-            self.release()
+
+
+
+#class myBuffer(cl._cl.Buffer):
+#    def __init__(self, *args, **kwargs):
+#        cl._cl.Buffer.__init__(self, *args, **kwargs)
+#        self.nowners = 0
+#    def __del__(self):
+#        self.nowners -= 1
+#        if self.nowners == 0:
+#            #print("released", self.size, "bytes directly")
+#            self.release()
 
 fallbacks = {
     'lt': clarray.Array.__lt__,
@@ -144,11 +148,11 @@ class myclArray(clarray.Array):
 #https://docs.python.org/3/library/operator.html
         self.is_boolean = False
         self.ismine = 1
-        if not isinstance(self.base_data, myBuffer):
-            self.base_data.__class__ = myBuffer
-            self.base_data.nowners = 1
-        else:
-            self.base_data.nowners += 1
+        #if not isinstance(self.base_data, myBuffer):
+        #    self.base_data.__class__ = myBuffer
+        #    self.base_data.nowners = 1
+        #else:
+        #    self.base_data.nowners += 1
 
     @chkmethod
     def __lt__(self, other):
@@ -180,11 +184,11 @@ class myclArray(clarray.Array):
         result = meta_add(self, other, ('gt',), resdtype=dtbool)
         result.dtype = dtbool
         return result
-    def __del__(self):
-        self.base_data.nowners -=1
-        if self.base_data.nowners == 0:
+    #def __del__(self):
+        #self.base_data.nowners -=1
+        #if self.base_data.nowners == 0:
             #print("released", self.base_data.size, "bytes")
-            self.base_data.release()
+        #    self.base_data.release()
 
     @chkmethod
     def __sub__(self, other):

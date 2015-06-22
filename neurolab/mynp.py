@@ -360,17 +360,10 @@ class myclArray(clarray.Array):
 
 
     def copy(self):
-        if not self.offset:
-            res = clarray.Array.copy(self)
-            if not isinstance(res, myclArray):
-                res.__class__ = myclArray
-                res.reinit()
-            return res
-        else:
-            res = empty(self.shape, self.dtype)
-            programs.singleset(self.dtype)\
-                    .prg(queue, (res.size,), None, res.data, self.base_data, np.int32(self.offset), global_offset=(0,))
-            return res
+        res = empty(self.shape, self.dtype)
+        programs.singleset(self.dtype)\
+                .prg(queue, (res.size,), None, res.data, self.base_data, np.int32(self.offset), global_offset=(0,))
+        return res
 
         
 

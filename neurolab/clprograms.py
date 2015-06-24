@@ -215,8 +215,8 @@ class programs():
     def argsort(self, dtype):
         key = (dtype, 'argsort',)
         if not key in programcache.keys():
-            programcache[key] = cl.algorithm.RadixSort(self.ctx, typemaps[dtype.name]+" *mkey, unsigned int *tosort",\
-                                                                         "mkey[i]", ["mkey", "tosort"])
+            programcache[key] = cl.algorithm.RadixSort(self.ctx, typemaps[dtype.name]+" *mkey, int *tosort",\
+                                                                         "mkey[i]", ["mkey", "tosort"], key_dtype=np.int32)
         return programcache[key]
 
     def dot(self, *args):

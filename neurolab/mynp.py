@@ -748,22 +748,23 @@ def zeros_like(a, dtype=None, order='K', subok=True):
     res.reinit()
     return res
 
-@chkfunc
+#@chkfunc
 def argmin(a):
     return argsort(a)[0]
-@chkfunc
+#@chkfunc
 def argmax(a):
     return argsort(a)[-1]
-@chkfunc
+#@chkfunc
 def argsort(a):
-    arng = get_arng(a.size, np.uint32)#clarray.arange(queue, 0, a.size, 1, dtype=np.int32)
-    prg = programs.argsort(a.dtype)
-    res = prg(a, arng, key_bits=a.dtype.itemsize*8)[0][1]
-    if not isinstance(res, myclArray):
-        res.__class__ = myclArray
-        res.reinit()
-    #print(ret)
-    return res
+    return arr_from_np(np.argsort(a))
+    #arng = get_arng(a.size, np.int32)#clarray.arange(queue, 0, a.size, 1, dtype=np.int32)
+    #prg = programs.argsort(a.dtype)
+    #res = prg(a, arng, key_bits=a.dtype.itemsize*8)[0][1]
+    #if not isinstance(res, myclArray):
+    #    res.__class__ = myclArray
+    #    res.reinit()
+    ##print(ret)
+    #return res
 
 
 @chkfunc

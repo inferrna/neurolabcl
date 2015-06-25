@@ -1,6 +1,7 @@
 from habranet import network
 nt = network()
 nn=nt.create([4, 1000, 1])
+import numpy as np
 
 lamb=0.3
 cost=1
@@ -15,7 +16,7 @@ xTest= [[0.4, 1.9, 2.5, 3.1], [1.51, 2.0, 2.4, 3.8], [2.6, 5.1, 6.2, 7.2], [3.23
 yTest = [[1], [1], [1], [1], [1],
  [0], [0], [0], [0], [0]]
                 
-while cost>0:
+while cost:
     cost=nt.costTotal(False, nn, xTrain, yTrain, lamb)
     costTest=nt.costTotal(False, nn, xTest, yTest, lamb)
     delta=nt.backpropagation(False, nn, xTrain, yTrain, lamb)

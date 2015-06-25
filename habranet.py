@@ -57,7 +57,8 @@ class network:
     def cost(self, h, y):
         logH=np.log(h)
         log1H=np.log(1-h)
-        cost = np.dot(-1*y.T, logH) - np.dot((1-y.T), log1H) #transpose y for matrix multiplication
+        y_t = y.T
+        cost = np.dot(-1*y_t, logH) - np.dot((1-y_t), log1H) #transpose y for matrix multiplication
         return cost.sum() # sum matrix of costs for each output neuron and input vector
         
     def regul(self, theta):

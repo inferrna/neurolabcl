@@ -150,26 +150,32 @@ class myclArray(clarray.Array):
         else:
             self.base_data.nowners += 1
 
+    @chkmethod
     def __lt__(self, other):
         result = meta_add(self, other, ('lt',), resdtype=dtbool)
         result.dtype = dtbool
         return result
+    @chkmethod
     def __le__(self, other):
         result = meta_add(self, other, ('le',), resdtype=dtbool)
         result.dtype = dtbool
         return result
+    @chkmethod
     def __eq__(self, other):
         result = meta_add(self, other, ('eq',), resdtype=dtbool)
         result.dtype = dtbool
         return result
+    @chkmethod
     def __ne__(self, other):
         result = meta_add(self, other, ('ne',), resdtype=dtbool)
         result.dtype = dtbool
         return result
+    @chkmethod
     def __ge__(self, other):
         result = meta_add(self, other, ('ge',), resdtype=dtbool)
         result.dtype = dtbool
         return result
+    @chkmethod
     def __gt__(self, other):
         result = meta_add(self, other, ('gt',), resdtype=dtbool)
         result.dtype = dtbool
@@ -180,30 +186,39 @@ class myclArray(clarray.Array):
             #print("released", self.base_data.size, "bytes")
             self.base_data.release()
 
+    @chkmethod
     def __sub__(self, other):
         return meta_add(self, other, ('sub',))
 
+    @chkvoidmethod
     def __isub__(self, other):
         return meta_add(self, other, ('i', 'sub',))
 
+    @chkmethod
     def __add__(self, other):
         return meta_add(self, other, ('add',))
 
+    @chkvoidmethod
     def __iadd__(self, other):
         return meta_add(self, other, ('i', 'add',))
 
+    @chkmethod
     def __mul__(self, other):
         return meta_add(self, other, ('mul', ))
 
+    @chkvoidmethod
     def __imul__(self, other):
         return meta_add(self, other, ('i', 'mul', ))
 
+    @chkmethod
     def __truediv__(self, other):
         return meta_add(self, other, ('truediv', ), resdtype=float_)
 
+    @chkvoidmethod
     def __itruediv__(self, other):
         return meta_add(self, other, ('i', 'truediv', ), resdtype=float_)
 
+    @chkmethod
     def reshape(self, *shape, **kwargs):
         res = clarray.Array.reshape(self, *shape, **kwargs)
         if not isinstance(res, myclArray):
@@ -241,6 +256,7 @@ class myclArray(clarray.Array):
         return indices, newshape
 
 
+    @chkmethod
     def __getitem__(self, index):
         if isinstance(index, myclArray) and index.dtype == dtbool:
             x, y, z = algorithm.copy_if(self.reshape((self.size,)),\
@@ -268,6 +284,7 @@ class myclArray(clarray.Array):
             res.reinit()
         return res
 
+    @chkmethod
     def transpose(self, *args):
         replaces = np.array(args, dtype=np.uint32)
         olddims = np.array(self.shape, dtype=np.uint32)
@@ -286,6 +303,7 @@ class myclArray(clarray.Array):
         return self.transpose(*args)
 
 
+    @chkvoidmethod
     def __setitem__(self, subscript, _value):
         def fix_val(_vl):
             if isinstance(_vl, myclArray):
@@ -344,11 +362,12 @@ class myclArray(clarray.Array):
     def copy(self):
         res = empty(self.shape, self.dtype)
         programs.singleset(self.dtype)\
-                .prg(queue, (res.size,), None, res.data, self.base_data, np.int32(self.offset), global_offset=(0,))
+                .prg(queue, (res.size,), None, res.data, self.base_data, np.int32(self.offset//self.dtype.itemsize), global_offset=(0,))
         return res
 
         
 
+    @chkmethod
     def max(*args, **kwargs):
         a = args[0]
         if a.ndim==0 or not 'axis' in kwargs.keys():
@@ -361,6 +380,7 @@ class myclArray(clarray.Array):
             kwargs['prg2load'] = programs.max
             return _sum(*args, **kwargs)
 
+    @chkmethod
     def min(*args, **kwargs):
         a = args[0]
         if a.ndim==0 or not 'axis' in kwargs.keys():
@@ -373,6 +393,7 @@ class myclArray(clarray.Array):
             kwargs['prg2load'] = programs.min
             return _sum(*args, **kwargs)
 
+    @chkmethod
     def sum(*args, **kwargs):
         a = args[0]
         if a.ndim==0 or not 'axis' in kwargs.keys():
@@ -470,12 +491,14 @@ class nprandom():
 
 random = myrandom()
 
+@chkfunc
 def ones(shape, dtype=None, order='C'):
     if not dtype: dtype = float_
     res = myclArray(queue, shape, dtype)
     res.fill(1)
     return res
 
+@chkfunc
 def delete(_arr, obj, axis=None):
     if type(obj) == int:
         rc = 1
@@ -497,10 +520,12 @@ def delete(_arr, obj, axis=None):
     prg.delete(queue, (dst.size,), None, removed.data, arr.data, dst.data)
     return dst
 
+@chkfunc
 def vstack(arrays):
     return concatenate(arrays, axis=0)
 
 
+@chkfunc
 def concatenate(_arrays, axis=0):
     arrays = [array(a) for a in _arrays]
     #print([a.shape for a in arrays], axis)
@@ -522,6 +547,7 @@ def concatenate(_arrays, axis=0):
     #res.reinit()
     return res
 
+@chkfunc
 def dot(_a, _b, out=None):
     a = array(_a)
     b = array(_b)
@@ -540,12 +566,14 @@ def dot(_a, _b, out=None):
     #res.reinit()
     return res
 
+@chkfunc
 def log(arr):
     res = clmath.log(arr, queue=queue)
     res.__class__ = myclArray
     res.reinit()
     return res
 
+@chkfunc
 def floor(a, out=None):
     #TODO: work with out
     res = clmath.floor(a, queue=queue) #np.floor(*args, **kwargs)
@@ -554,6 +582,7 @@ def floor(a, out=None):
     return res
 
 
+@chkfunc
 def isneginf(a, out=None):
     program = programs.isinf(a.dtype)
     if out:
@@ -569,16 +598,19 @@ def isneginf(a, out=None):
     #return np.isneginf(*args, **kwargs)
 
 
+@chkfunc
 def ones_like(a, dtype=float_, order='K', subok=True):
     res = empty(a.shape, dtype=(dtype or a.dtype))
     res.fill(1, queue=queue)
     return res
 
 
+@chkfunc
 def row_stack(*args, **kwargs):
     return arr_from_np(np.row_stack(*args, **kwargs))
 
 
+@chkfunc
 def tanh(a, out=None):
     #TODO: work with out
     res = clmath.tanh(a, queue=queue) #np.tanh(*args, **kwargs)
@@ -587,11 +619,13 @@ def tanh(a, out=None):
     return res
 
 
+@chkfunc
 def all(a, axis=None, out=None, keepdims=False):
     #TODO: work with axis, out, keepdims
     return a.all(queue=queue) #np.all(*args, **kwargs)
 
 
+@chkfunc
 def asfarray(a, dtype=float_):
     if isinstance(a, myclArray):
         return a.astype(dtype, queue=queue)
@@ -599,6 +633,7 @@ def asfarray(a, dtype=float_):
         return array(a, dtype=dtype)
 
 
+@chkfunc
 def exp(a, out=None):
     #TODO: work with out
     res = clmath.exp(a, queue=queue) #np.exp(*args, **kwargs)
@@ -607,6 +642,7 @@ def exp(a, out=None):
     return res
 
 
+@chkfunc
 def linspace(start, stop, num=50, endpoint=True, retstep=False, dtype=float_):
     #TODO: create native function
     if num<2: return array([start])
@@ -622,16 +658,19 @@ def linspace(start, stop, num=50, endpoint=True, retstep=False, dtype=float_):
     res.reinit()
     return res
 
+@chkfunc
 def arange(start, stop, dtype=float_):
     res = clarray.arange(queue, start, stop, 1, dtype=dtype)
     res.__class__ = myclArray
     res.reinit()
     return res
 
+@chkfunc
 def min(a):
     return a.min()#np.min(*args, **kwargs)
 
 
+@chkfunc
 def sqrt(a, out=None):
     #TODO: work with out
     res = clmath.sqrt(a, queue=queue) #np.sqrt(*args, **kwargs)
@@ -645,6 +684,7 @@ def values(*args, **kwargs):
     return arr_from_np(np.values(*args, **kwargs))
 
 
+@chkfunc
 def isinf(a, out=None):
     program = programs.isinf(a.dtype)
     if out:
@@ -663,9 +703,11 @@ def isinf(a, out=None):
 def items(*args, **kwargs):
     return np.items(*args, **kwargs)
 
+@chkfunc
 def max(a):
     return a.max()#np.max(*args, **kwargs)
 
+@chkfunc
 def abs(*args, **kwargs):
     arr = args[0]
     if isinstance(arr, myclArray):
@@ -678,11 +720,13 @@ def empty(shape, dtype=float_):
     #return arr_from_np( np.empty(*args, **kwargs) )
     return myclArray(queue, shape, dtype)
 
+@chkfunc
 def square(a, out=None):
     #TODO: work with out
     return a*a #np.square(*args, **kwargs)
 
 
+@chkfunc
 def sign(a, out=None):
     program = programs.sign(a.dtype)
     if out:
@@ -697,16 +741,20 @@ def sign(a, out=None):
         return res
 
 
+@chkfunc
 def zeros_like(a, dtype=None, order='K', subok=True):
     res = clarray.zeros_like(a)
     res.__class__ = myclArray
     res.reinit()
     return res
 
+#@chkfunc
 def argmin(a):
     return argsort(a)[0]
+#@chkfunc
 def argmax(a):
     return argsort(a)[-1]
+#@chkfunc
 def argsort(a):
     return arr_from_np(np.argsort(a))
     #arng = get_arng(a.size, np.int32)#clarray.arange(queue, 0, a.size, 1, dtype=np.int32)
@@ -719,6 +767,7 @@ def argsort(a):
     #return res
 
 
+@chkfunc
 def sum(*args, **kwargs):
     kwargs['prg2load'] = programs.sum
     return _sum(*args, **kwargs)
@@ -749,6 +798,7 @@ def _sum(a, axis=None, dtype=None, out=None, prg2load=programs.sum):
     program.misum(queue, (int(a.size//a.shape[axis]),), None, cltrresult, result.data)
     return result
 
+@chkfunc
 def sin(arr):
     #TODO: work with axis, out, keepdims
     res = clmath.sin(arr, queue=queue) #np.sum(*args, **kwargs)
@@ -757,12 +807,14 @@ def sin(arr):
     return res
 
 
+@chkfunc
 def zeros(shape, dtype=float_, order='C'):
     res = clarray.zeros(queue, shape, dtype, order)
     res.__class__ = myclArray
     res.reinit()
     return res
 
+@chkfunc
 def array(*args, **kwargs):
     if isinstance(args[0], myclArray):
         if args[0].offset: return args[0].copy()
@@ -771,6 +823,7 @@ def array(*args, **kwargs):
         kwargs['dtype'] = float_
     return arr_from_np( np.array(*args, **kwargs) )
 
+@chkfunc
 def asarray(*args, **kwargs):
     if not 'dtype' in kwargs.keys():
         kwargs['dtype'] = float_

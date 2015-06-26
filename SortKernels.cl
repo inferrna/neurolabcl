@@ -2,12 +2,12 @@
 // EB Jun 2011
 
 #if CONFIG_USE_VALUE
-typedef uint2 data_t;
+typedef float data_t;
 #define getKey(a) ((a).x)
 #define getValue(a) ((a).y)
 #define makeData(k,v) ((uint2)((k),(v)))
 #else
-typedef uint data_t;
+typedef float data_t;
 #define getKey(a) (a)
 #define getValue(a) (0)
 #define makeData(k,v) (k)

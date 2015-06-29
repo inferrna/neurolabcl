@@ -1,9 +1,10 @@
 import mynp as np
 import time
+import bitonic_templates
+from mako.template import Template
 
-tplsrc = open("SortKernels.cl.tpl", "r").read()
-
-singleprogram = np.cl.Program(np.ctx, tplsrc).build()
+#np.cl.Program(np.ctx, tplsrc).build()
+defstpl = Template(bitonic_templates.defines)
 sz = pow(2, 25)
 arr = np.random.randn(sz)
 out = np.empty(sz, dtype=arr.dtype)
@@ -43,40 +44,41 @@ def sort_c4(arr):
             kid = -1;
             doLocal = 0;
             nThreads = 0;
-            d = strategy.pop(0);
-
+            d = strategy.pop(0)
+            defs = defstpl.render(inc=inc, dir=length<<1)
             if d == -1:
-                kid = singleprogram.ParallelBitonic_C4 #PARALLEL_BITONIC_C4_KERNEL;
+                kid = bitonic_templates.ParallelBitonic_C4 #PARALLEL_BITONIC_C4_KERNEL;
                 ninc = -1; # reduce all bits
                 doLocal = 4;
                 nThreads = n >> 2;
             elif d == 4:
-                kid = singleprogram.ParallelBitonic_B16 #PARALLEL_BITONIC_B16_KERNEL;
+                kid = bitonic_templates.ParallelBitonic_B16 #PARALLEL_BITONIC_B16_KERNEL;
                 ninc = 4;
                 nThreads = n >> ninc;
             elif d == 3:
-                kid = singleprogram.ParallelBitonic_B8 #PARALLEL_BITONIC_B8_KERNEL;
+                kid = bitonic_templates.ParallelBitonic_B8 #PARALLEL_BITONIC_B8_KERNEL;
                 ninc = 3;
                 nThreads = n >> ninc;
             elif d == 2:
-                kid = singleprogram.ParallelBitonic_B4 #PARALLEL_BITONIC_B4_KERNEL;
+                kid = bitonic_templates.ParallelBitonic_B4 #PARALLEL_BITONIC_B4_KERNEL;
                 ninc = 2;
                 nThreads = n >> ninc;
             elif d == 1:
-                kid = singleprogram.ParallelBitonic_B2 #PARALLEL_BITONIC_B2_KERNEL;
+                kid = bitonic_templates.ParallelBitonic_B2 #PARALLEL_BITONIC_B2_KERNEL;
                 ninc = 1;
                 nThreads = n >> ninc;
             else:
                 print("Strategy error!");
             print("inc ==", inc)
             wg = np.ctx.devices[0].max_work_group_size
-            wg = min(wg,256);
-            wg = min(wg,nThreads);
+            wg = min(wg,256)
+            wg = min(wg,nThreads)
+            prg = np.cl.Program(np.ctx, defs + kid).build()
             if doLocal>0:
                 localmem = np.cl.LocalMemory(wg*doLocal*arr.dtype.itemsize)
-                kid(np.queue, (nThreads,), (wg,), arr.data, np.np.int32(inc), np.np.int32(length<<1), localmem)
+                prg.run(np.queue, (nThreads,), (wg,), arr.data, localmem)
             else: 
-                kid(np.queue, (nThreads,), (wg,), arr.data, np.np.int32(inc), np.np.int32(length<<1))
+                prg.run(np.queue, (nThreads,), (wg,), arr.data)
             np.cl.enqueue_barrier(np.queue)
             #c->enqueueBarrier(targetDevice); // sync
             # if (mLastN != n) printf("LENGTH=%d INC=%d KID=%d\n",length,inc,kid); // DEBUG

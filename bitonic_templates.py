@@ -4,13 +4,12 @@
 """
 
 defines = """
+typedef ${dtype} data_t;
 #if CONFIG_USE_VALUE
-typedef float data_t;
 #define getKey(a) ((a).x)
 #define getValue(a) ((a).y)
-#define makeData(k,v) ((uint2)((k),(v)))
+#define makeData(k,v) ((${dtype}2)((k),(v)))
 #else
-typedef float data_t;
 #define getKey(a) (a)
 #define getValue(a) (0)
 #define makeData(k,v) (k)
@@ -25,7 +24,7 @@ typedef float data_t;
 #define hinc ${inc>>1} //Half inc
 #define qinc ${inc>>2} //Quarter inc
 #define einc ${inc>>3} //Eighth of inc
-#define dir ${dir}
+#define dir  ${dir}
 
 
 #define ORDERV(x,a,b) { bool swap = reverse ^ (getKey(x[a])<getKey(x[b])); \

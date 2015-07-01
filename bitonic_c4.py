@@ -5,16 +5,17 @@ from mako.template import Template
 
 #np.cl.Program(np.ctx, tplsrc).build()
 defstpl = Template(bitonic_templates.defines)
-sz = pow(2, 25)
+sz = pow(2, 15)
 arr = np.random.randn(sz)
 out = np.empty(sz, dtype=arr.dtype)
 arrc = arr.get()
 
 arrs = np.np.sort(arrc)
-arrc[99] = 0.199
+#arrc[99] = 0.199
 tsc = time.time()
 arrs = np.np.sort(arrc)
 tec = time.time()
+indexes = np.arange(sz)
 
 cached_defs = {}
 cached_progs = {'B2':{}, 'B4':{}, 'B8':{}, 'B16':{}, 'C4':{}}
@@ -24,6 +25,7 @@ kernels_srcs = {'B2': bitonic_templates.ParallelBitonic_B2,
                 'B16':bitonic_templates.ParallelBitonic_B16,
                 'C4': bitonic_templates.ParallelBitonic_C4}
 
+
 def get_program(letter, params):
     if params in cached_progs[letter].keys():
         return cached_progs[letter][params]
@@ -31,7 +33,7 @@ def get_program(letter, params):
         if params in cached_defs.keys():
             defs = cached_defs[params]
         else:
-            defs = defstpl.render(inc=params[0], dir=params[1], dtype=params[2])
+            defs = defstpl.render(NS="\\", inc=params[0], dir=params[1], dtype=params[2], idxtype=params[3])
             cached_defs[params] = defs
         kid = kernels_srcs[letter]
         prg = np.cl.Program(np.ctx, defs + kid).build()
@@ -41,8 +43,8 @@ def get_program(letter, params):
 
 def sort_c4(arr):
     n = arr.size
-    allowb4  = True
-    allowb8  = True
+    allowb4  = True 
+    allowb8  = True 
     allowb16 = True 
     length = 1
     while length<n:
@@ -100,12 +102,13 @@ def sort_c4(arr):
             wg = min(wg,256)
             wg = min(wg,nThreads)
             #prg = np.cl.Program(np.ctx, defs + kid).build()
-            prg = get_program(letter, (inc, direction, 'float',))
+            prg = get_program(letter, (inc, direction, 'float', 'uint'))
             if doLocal>0:
-                localmem = np.cl.LocalMemory(wg*doLocal*arr.dtype.itemsize)
-                prg.run(np.queue, (nThreads,), (wg,), arr.data, localmem)
+                localmemx = np.cl.LocalMemory(wg*doLocal*arr.dtype.itemsize)
+                localmemy = np.cl.LocalMemory(wg*doLocal*indexes.dtype.itemsize)
+                prg.run(np.queue, (nThreads,), (wg,), arr.data, indexes.data, localmemx, localmemy)
             else: 
-                prg.run(np.queue, (nThreads,), (wg,), arr.data)
+                prg.run(np.queue, (nThreads,), (wg,), arr.data, indexes.data)
             np.cl.enqueue_barrier(np.queue)
             #c->enqueueBarrier(targetDevice); // sync
             # if (mLastN != n) printf("LENGTH=%d INC=%d KID=%d\n",length,inc,kid); // DEBUG

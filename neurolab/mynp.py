@@ -659,7 +659,17 @@ def linspace(start, stop, num=50, endpoint=True, retstep=False, dtype=float_):
     return res
 
 @chkfunc
-def arange(start, stop, dtype=float_):
+def arange(start, stop=0):
+    if not stop:
+        stop = start
+        start = 0
+    if type(start) == float or type(stop) == float:
+        dtype=float_
+    elif start>=0:
+        dtype = np.uint32
+    elif start<0:
+        dtype = np.int32
+    #print(start, stop, 1, dtype)
     res = clarray.arange(queue, start, stop, 1, dtype=dtype)
     res.__class__ = myclArray
     res.reinit()

@@ -20,11 +20,11 @@ typedef ${idxtype}2 idx_t2;
 #ifndef BLOCK_FACTOR
 #define BLOCK_FACTOR 1
 #endif
-#define ORDER(a,b,ai,bj) { bool swap = reverse ^ (getKey(a)<getKey(b));${NS}
+#define ORDER(a,b,ay,by) { bool swap = reverse ^ (getKey(a)<getKey(b));${NS}
                          data_t auxa = a; data_t auxb = b;${NS}
-                         idx_t auxi = ai; idx_t auxj = bj;${NS}
+                         idx_t auya = ay; idx_t auyb = by;${NS}
                          a = (swap)?auxb:auxa; b = (swap)?auxa:auxb;${NS}
-                         ai = (swap)?auxj:auxi; bj = (swap)?auxi:auxj;}
+                         ay = (swap)?auyb:auya; by = (swap)?auya:auyb;}
 
 #define inc  ${inc}
 #define hinc ${inc>>1} //Half inc
@@ -35,9 +35,9 @@ typedef ${idxtype}2 idx_t2;
 
 #define ORDERV(x,y,a,b) { bool swap = reverse ^ (getKey(x[a])<getKey(x[b]));${NS}
                         data_t auxa = x[a]; data_t auxb = x[b];${NS}
-                        idx_t auxi = y[a]; idx_t auxj = y[b];${NS}
+                        idx_t auya = y[a]; idx_t auyb = y[b];${NS}
                         x[a] = (swap)?auxb:auxa; x[b] = (swap)?auxa:auxb;${NS}
-                        y[a] = (swap)?auxj:auxi; y[b] = (swap)?auxi:auxj;}
+                        y[a] = (swap)?auyb:auya; y[b] = (swap)?auya:auyb;}
 #define B2V(x,y,a)  { ORDERV(x,y,a,a+1) }
 #define B4V(x,y,a)  { for (int i4=0;i4<2;i4++) { ORDERV(x,y,a+i4,a+i4+2) } B2V(x,y,a) B2V(x,y,a+2) }
 #define B8V(x,y,a)  { for (int i8=0;i8<4;i8++) { ORDERV(x,y,a+i8,a+i8+4) } B4V(x,y,a) B4V(x,y,a+4) }

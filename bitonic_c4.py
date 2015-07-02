@@ -41,7 +41,7 @@ def get_program(letter, params):
         return prg
 
 
-def sort_c4(arr):
+def sort_c4(arr, idx):
     n = arr.size
     allowb4  = True 
     allowb8  = True 
@@ -102,13 +102,13 @@ def sort_c4(arr):
             wg = min(wg,256)
             wg = min(wg,nThreads)
             #prg = np.cl.Program(np.ctx, defs + kid).build()
-            prg = get_program(letter, (inc, direction, 'float', 'uint'))
+            prg = get_program(letter, (inc, direction, 'float', 'uint',))
             if doLocal>0:
                 localmemx = np.cl.LocalMemory(wg*doLocal*arr.dtype.itemsize)
                 localmemy = np.cl.LocalMemory(wg*doLocal*indexes.dtype.itemsize)
-                prg.run(np.queue, (nThreads,), (wg,), arr.data, indexes.data, localmemx, localmemy)
+                prg.run(np.queue, (nThreads,), (wg,), arr.data, idx.data, localmemx, localmemy)
             else: 
-                prg.run(np.queue, (nThreads,), (wg,), arr.data, indexes.data)
+                prg.run(np.queue, (nThreads,), (wg,), arr.data, idx.data)
             np.cl.enqueue_barrier(np.queue)
             #c->enqueueBarrier(targetDevice); // sync
             # if (mLastN != n) printf("LENGTH=%d INC=%d KID=%d\n",length,inc,kid); // DEBUG
@@ -117,9 +117,9 @@ def sort_c4(arr):
         length<<=1
         #print("length =", length)
 
-sort_c4(arr.copy())
+sort_c4(arr.copy(), indexes.copy())
 tsg = time.time()        
-sort_c4(arr)
+sort_c4(arr, indexes)
 teg = time.time()
 
 print("Sorting {0} samples. Got {1} sec on CPU and {2} sec on GPU".format(sz, tec - tsc, teg - tsg))

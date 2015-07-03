@@ -25,6 +25,7 @@ kernels_srcs = {'B2': bitonic_templates.ParallelBitonic_B2,
                 'B16':bitonic_templates.ParallelBitonic_B16,
                 'C4': bitonic_templates.ParallelBitonic_C4}
 
+argsort=0
 
 def get_program(letter, params):
     if params in cached_progs[letter].keys():
@@ -33,11 +34,13 @@ def get_program(letter, params):
         if params in cached_defs.keys():
             defs = cached_defs[params]
         else:
-            defs = defstpl.render(NS="\\", inc=params[0], dir=params[1], dtype=params[2], idxtype=params[3])
+            defs = defstpl.render(NS="\\", argsort=argsort, inc=params[0], dir=params[1], dtype=params[2], idxtype=params[3])
             cached_defs[params] = defs
-        kid = kernels_srcs[letter]
+        kid = Template(kernels_srcs[letter]).render(argsort=argsort)
         prg = np.cl.Program(np.ctx, defs + kid).build()
         cached_progs[letter][params] = prg
+        if letter=='B2':
+            print(kid)
         return prg
 
 
@@ -105,10 +108,16 @@ def sort_c4(arr, idx):
             prg = get_program(letter, (inc, direction, 'float', 'uint',))
             if doLocal>0:
                 localmemx = np.cl.LocalMemory(wg*doLocal*arr.dtype.itemsize)
-                localmemy = np.cl.LocalMemory(wg*doLocal*indexes.dtype.itemsize)
-                prg.run(np.queue, (nThreads,), (wg,), arr.data, idx.data, localmemx, localmemy)
-            else: 
-                prg.run(np.queue, (nThreads,), (wg,), arr.data, idx.data)
+                if argsort:
+                    localmemy = np.cl.LocalMemory(wg*doLocal*indexes.dtype.itemsize)
+                    prg.run(np.queue, (nThreads,), (wg,), arr.data, idx.data, localmemx, localmemy)
+                else:
+                    prg.run(np.queue, (nThreads,), (wg,), arr.data, localmemx)
+            else:
+                if argsort:
+                    prg.run(np.queue, (nThreads,), (wg,), arr.data, idx.data)
+                else:
+                    prg.run(np.queue, (nThreads,), (wg,), arr.data)
             np.cl.enqueue_barrier(np.queue)
             #c->enqueueBarrier(targetDevice); // sync
             # if (mLastN != n) printf("LENGTH=%d INC=%d KID=%d\n",length,inc,kid); // DEBUG

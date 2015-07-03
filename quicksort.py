@@ -1,23 +1,22 @@
-quicktpl = """
+import mynp as np
+from mako.template import Template
+from math import log2
+
+
+quicktplsrc = """
 //  quickSort
 //
 //  This public-domain C implementation by Darel Rex Finley.
 //
-//  * Returns YES if sort was successful, or NO if the nested
-//    pivots went too deep, in which case your array will have
-//    been re-ordered, but probably not sorted correctly.
-//
-//  * This function assumes it is called with valid parameters.
-//
-//  * Example calls:
-//    quickSort(&myArray[0],5); // sorts elements 0, 1, 2, 3, and 4
-//    quickSort(&myArray[3],5); // sorts elements 3, 4, 5, 6, and 7
-#define  MAX_LEVELS  ${max_lvl}
-typdef ${dtype} dtype
+// http://alienryderflex.com/quicksort/
 
-__kernel void quickSort(dtype *arr, int elements) {
+#define MAX_LEVELS ${max_lvl}
+typedef ${dtype} dtype;
+
+__kernel void quick_sort(__global dtype *arr) {
   int  piv, beg[MAX_LEVELS], end[MAX_LEVELS], i=0, L, R ;
-  beg[0]=0; end[0]=elements;
+  beg[0]=0; end[0]=${elements};
+  arr += get_global_id(0) * ${elements};
   while (i>=0) {
     L=beg[i]; R=end[i]-1;
     if (L<R) {
@@ -27,6 +26,7 @@ __kernel void quickSort(dtype *arr, int elements) {
         while (arr[L]<=piv && L<R) L++; if (L<R) arr[R--]=arr[L];
       }
       arr[L]=piv; beg[i+1]=L+1; end[i+1]=end[i]; end[i++]=L;
+      printf("i==%u\\n", i);
     }
     else {
       i--;
@@ -34,3 +34,12 @@ __kernel void quickSort(dtype *arr, int elements) {
   }
 }
 """
+
+quicktpl = Template(quicktplsrc)
+arr = np.random.randn(16, 16)
+quicksrc = quicktpl.render(max_lvl = 48, elements=arr.shape[-1], dtype='float')
+
+arrc = arr.copy()
+prg = np.cl.Program(np.ctx, quicksrc).build()
+prg.quick_sort(np.queue, (sum(arr.shape[:-1]),), None, arr.data)
+

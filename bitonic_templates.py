@@ -47,140 +47,212 @@ typedef ${idxtype}2 idx_t2;
 ParallelBitonic_B2 = """
 // N/2 threads
 //ParallelBitonic_B2 
-__kernel void run(__global data_t * data, __global idx_t * index)
+__kernel void run(__global data_t * data\\
+% if argsort:
+, __global idx_t * index)
+% else:
+)
+% endif
 {
   int t = get_global_id(0); // thread index
   int low = t & (inc - 1); // low order bits (below INC)
   int i = (t<<1) - low; // insert 0 at position INC
   bool reverse = ((dir & i) == 0); // asc/desc order
   data  += i; // translate to first value
+% if argsort:
   index += i; // translate to first value
+% endif
 
   // Load data
   data_t x0 = data[  0];
   data_t x1 = data[inc];
+% if argsort:
   // Load index
   idx_t i0 = index[  0];
   idx_t i1 = index[inc];
+% endif
 
   // Sort
+% if argsort:
   ORDER(x0,x1,i0,i1)
+% else:
+  ORDER(x0,x1)
+% endif
 
   // Store data
   data[0  ] = x0;
   data[inc] = x1;
+% if argsort:
   // Store index
   index[  0] = i0;
   index[inc] = i1;
+% endif
 }
 """
 
 ParallelBitonic_B4 = """
 // N/4 threads
 //ParallelBitonic_B4 
-__kernel void run(__global data_t * data, __global idx_t * index)
+__kernel void run(__global data_t * data\\
+% if argsort:
+, __global idx_t * index)
+% else:
+)
+% endif
 {
   int t = get_global_id(0); // thread index
   int low = t & (hinc - 1); // low order bits (below INC)
   int i = ((t - low) << 2) + low; // insert 00 at position INC
   bool reverse = ((dir & i) == 0); // asc/desc order
   data  += i; // translate to first value
+% if argsort:
   index += i; // translate to first value
+% endif
 
   // Load data
   data_t x0 = data[     0];
   data_t x1 = data[  hinc];
   data_t x2 = data[2*hinc];
   data_t x3 = data[3*hinc];
+% if argsort:
   // Load index
   idx_t i0 = index[     0];
   idx_t i1 = index[  hinc];
   idx_t i2 = index[2*hinc];
   idx_t i3 = index[3*hinc];
+% endif
 
   // Sort
+% if argsort:
   ORDER(x0,x2,i0,i2)
   ORDER(x1,x3,i1,i3)
   ORDER(x0,x1,i0,i1)
   ORDER(x2,x3,i2,i3)
+% else:
+  ORDER(x0,x2)
+  ORDER(x1,x3)
+  ORDER(x0,x1)
+  ORDER(x2,x3)
+% endif
 
   // Store data
   data[     0] = x0;
   data[  hinc] = x1;
   data[2*hinc] = x2;
   data[3*hinc] = x3;
+% if argsort:
   // Store index
   index[     0] = i0;
   index[  hinc] = i1;
   index[2*hinc] = i2;
   index[3*hinc] = i3;
+% endif
 }
 """
 
 ParallelBitonic_B8 = """
 // N/8 threads
 //ParallelBitonic_B8 
-__kernel void run(__global data_t * data, __global idx_t * index)
+__kernel void run(__global data_t * data\\
+% if argsort:
+, __global idx_t * index)
+% else:
+)
+% endif
 {
   int t = get_global_id(0); // thread index
   int low = t & (qinc - 1); // low order bits (below INC)
   int i = ((t - low) << 3) + low; // insert 000 at position INC
   bool reverse = ((dir & i) == 0); // asc/desc order
   data  += i; // translate to first value
+% if argsort:
   index += i; // translate to first value
+% endif
 
   // Load
   data_t x[8];
+% if argsort:
   idx_t y[8];
+% endif
   for (int k=0;k<8;k++) x[k] = data[k*qinc];
+% if argsort:
   for (int k=0;k<8;k++) y[k] = index[k*qinc];
+% endif
 
   // Sort
+% if argsort:
   B8V(x,y,0)
+% else:
+  B8V(x,y,0)
+% endif
 
   // Store
   for (int k=0;k<8;k++) data[k*qinc] = x[k];
+% if argsort:
   for (int k=0;k<8;k++) index[k*qinc] = y[k];
+% endif
 }
 """
 
 ParallelBitonic_B16 = """
 // N/16 threads
 //ParallelBitonic_B16 
-__kernel void run(__global data_t * data, __global idx_t * index)
+__kernel void run(__global data_t * data\\
+% if argsort:
+, __global idx_t * index)
+% else:
+)
+% endif
 {
   int t = get_global_id(0); // thread index
   int low = t & (einc - 1); // low order bits (below INC)
   int i = ((t - low) << 4) + low; // insert 0000 at position INC
   bool reverse = ((dir & i) == 0); // asc/desc order
   data  += i; // translate to first value
+% if argsort:
   index += i; // translate to first value
+% endif
 
   // Load
   data_t x[16];
   idx_t y[16];
   for (int k=0;k<16;k++) x[k] = data[k*einc];
+% if argsort:
   for (int k=0;k<16;k++) y[k] = index[k*einc];
+% endif
 
   // Sort
+% if argsort:
   B16V(x,y,0)
+% else:
+  B16V(x,0)
+% endif
 
   // Store
   for (int k=0;k<16;k++) data[k*einc] = x[k];
+% if argsort:
   for (int k=0;k<16;k++) index[k*einc] = y[k];
+% endif
 }
 """
 
 ParallelBitonic_C4 = """
 //ParallelBitonic_C4 
-__kernel void run(__global data_t * data, __global idx_t * index, __local data_t * aux, __local idx_t * auy)
+__kernel void run\\
+% if argsort:
+(__global data_t * data, __global idx_t * index, __local data_t * aux, __local idx_t * auy)
+% else:
+(__global data_t * data, __local data_t * aux)
+% endif
 {
   int t = get_global_id(0); // thread index
   int wgBits = 4*get_local_size(0) - 1; // bit mask to get index in local memory AUX (size is 4*WG)
   int linc,low,i;
   bool reverse;
   data_t x[4];
+% if argsort:
   idx_t y[4];
+% endif
 
   // First iteration, global input, local output
   linc = hinc;
@@ -188,10 +260,14 @@ __kernel void run(__global data_t * data, __global idx_t * index, __local data_t
   i = ((t - low) << 2) + low; // insert 00 at position INC
   reverse = ((dir & i) == 0); // asc/desc order
   for (int k=0;k<4;k++) x[k] = data[i+k*linc];
+% if argsort:
   for (int k=0;k<4;k++) y[k] = index[i+k*linc];
   B4V(x,y,0);
-  for (int k=0;k<4;k++) aux[(i+k*linc) & wgBits] = x[k];
   for (int k=0;k<4;k++) auy[(i+k*linc) & wgBits] = y[k];
+% else:
+  B4V(x,0);
+% endif
+  for (int k=0;k<4;k++) aux[(i+k*linc) & wgBits] = x[k];
   barrier(CLK_LOCAL_MEM_FENCE);
 
   // Internal iterations, local input and output
@@ -201,11 +277,16 @@ __kernel void run(__global data_t * data, __global idx_t * index, __local data_t
     i = ((t - low) << 2) + low; // insert 00 at position INC
     reverse = ((dir & i) == 0); // asc/desc order
     for (int k=0;k<4;k++) x[k] = aux[(i+k*linc) & wgBits];
+% if argsort:
     for (int k=0;k<4;k++) y[k] = auy[(i+k*linc) & wgBits];
     B4V(x,y,0);
     barrier(CLK_LOCAL_MEM_FENCE);
-    for (int k=0;k<4;k++) aux[(i+k*linc) & wgBits] = x[k];
     for (int k=0;k<4;k++) auy[(i+k*linc) & wgBits] = y[k];
+% else:
+    B4V(x,0);
+    barrier(CLK_LOCAL_MEM_FENCE);
+% endif
+    for (int k=0;k<4;k++) aux[(i+k*linc) & wgBits] = x[k];
     barrier(CLK_LOCAL_MEM_FENCE);
   }
 
@@ -213,9 +294,13 @@ __kernel void run(__global data_t * data, __global idx_t * index, __local data_t
   i = t << 2;
   reverse = ((dir & i) == 0); // asc/desc order
   for (int k=0;k<4;k++) x[k] = aux[(i+k) & wgBits];
+% if argsort:
   for (int k=0;k<4;k++) y[k] = auy[(i+k) & wgBits];
   B4V(x,y,0);
-  for (int k=0;k<4;k++) data[i+k] = x[k];
   for (int k=0;k<4;k++) index[i+k] = y[k];
+% else:
+  B4V(x,0);
+% endif
+  for (int k=0;k<4;k++) data[i+k] = x[k];
 }
 """

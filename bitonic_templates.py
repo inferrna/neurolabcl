@@ -20,11 +20,6 @@ typedef ${idxtype}2 idx_t2;
 #ifndef BLOCK_FACTOR
 #define BLOCK_FACTOR 1
 #endif
-#define ORDER(a,b,ay,by) { bool swap = reverse ^ (getKey(a)<getKey(b));${NS}
-                         data_t auxa = a; data_t auxb = b;${NS}
-                         idx_t auya = ay; idx_t auyb = by;${NS}
-                         a = (swap)?auxb:auxa; b = (swap)?auxa:auxb;${NS}
-                         ay = (swap)?auyb:auya; by = (swap)?auya:auyb;}
 
 #define inc  ${inc}
 #define hinc ${inc>>1} //Half inc
@@ -32,7 +27,12 @@ typedef ${idxtype}2 idx_t2;
 #define einc ${inc>>3} //Eighth of inc
 #define dir  ${dir}
 
-
+% if argsort:
+#define ORDER(a,b,ay,by) { bool swap = reverse ^ (getKey(a)<getKey(b));${NS}
+                         data_t auxa = a; data_t auxb = b;${NS}
+                         idx_t auya = ay; idx_t auyb = by;${NS}
+                         a = (swap)?auxb:auxa; b = (swap)?auxa:auxb;${NS}
+                         ay = (swap)?auyb:auya; by = (swap)?auya:auyb;}
 #define ORDERV(x,y,a,b) { bool swap = reverse ^ (getKey(x[a])<getKey(x[b]));${NS}
                         data_t auxa = x[a]; data_t auxb = x[b];${NS}
                         idx_t auya = y[a]; idx_t auyb = y[b];${NS}
@@ -42,6 +42,16 @@ typedef ${idxtype}2 idx_t2;
 #define B4V(x,y,a)  { for (int i4=0;i4<2;i4++) { ORDERV(x,y,a+i4,a+i4+2) } B2V(x,y,a) B2V(x,y,a+2) }
 #define B8V(x,y,a)  { for (int i8=0;i8<4;i8++) { ORDERV(x,y,a+i8,a+i8+4) } B4V(x,y,a) B4V(x,y,a+4) }
 #define B16V(x,y,a) { for (int i16=0;i16<8;i16++) { ORDERV(x,y,a+i16,a+i16+8) } B8V(x,y,a) B8V(x,y,a+8) }
+% else:
+#define ORDER(a,b) { bool swap = reverse ^ (getKey(a)<getKey(b)); data_t auxa = a; data_t auxb = b; a = (swap)?auxb:auxa; b = (swap)?auxa:auxb; }
+#define ORDERV(x,a,b) { bool swap = reverse ^ (getKey(x[a])<getKey(x[b]));${NS}
+      data_t auxa = x[a]; data_t auxb = x[b];${NS}
+      x[a] = (swap)?auxb:auxa; x[b] = (swap)?auxa:auxb; }
+#define B2V(x,a) { ORDERV(x,a,a+1) }
+#define B4V(x,a) { for (int i4=0;i4<2;i4++) { ORDERV(x,a+i4,a+i4+2) } B2V(x,a) B2V(x,a+2) }
+#define B8V(x,a) { for (int i8=0;i8<4;i8++) { ORDERV(x,a+i8,a+i8+4) } B4V(x,a) B4V(x,a+4) }
+#define B16V(x,a) { for (int i16=0;i16<8;i16++) { ORDERV(x,a+i16,a+i16+8) } B8V(x,a) B8V(x,a+8) }
+% endif
 """
 
 ParallelBitonic_B2 = """
@@ -183,7 +193,7 @@ __kernel void run(__global data_t * data\\
 % if argsort:
   B8V(x,y,0)
 % else:
-  B8V(x,y,0)
+  B8V(x,0)
 % endif
 
   // Store
@@ -215,7 +225,9 @@ __kernel void run(__global data_t * data\\
 
   // Load
   data_t x[16];
+% if argsort:
   idx_t y[16];
+% endif
   for (int k=0;k<16;k++) x[k] = data[k*einc];
 % if argsort:
   for (int k=0;k<16;k++) y[k] = index[k*einc];

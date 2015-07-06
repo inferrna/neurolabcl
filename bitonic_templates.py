@@ -52,6 +52,8 @@ typedef ${idxtype}2 idx_t2;
 #define B8V(x,a) { for (int i8=0;i8<4;i8++) { ORDERV(x,a+i8,a+i8+4) } B4V(x,a) B4V(x,a+4) }
 #define B16V(x,a) { for (int i16=0;i16<8;i16++) { ORDERV(x,a+i16,a+i16+8) } B8V(x,a) B8V(x,a+8) }
 % endif
+#define nsize ${nsize}   //Total next dimensions sizes sum.
+#define dsize ${dsize}   //Dimension size
 """
 
 ParallelBitonic_B2 = """

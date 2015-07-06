@@ -34,7 +34,9 @@ def get_program(letter, params):
         if params in cached_defs.keys():
             defs = cached_defs[params]
         else:
-            defs = defstpl.render(NS="\\", argsort=argsort, inc=params[0], dir=params[1], dtype=params[2], idxtype=params[3])
+            defs = defstpl.render(NS="\\", argsort=argsort, inc=params[0], dir=params[1],\
+                                           dtype=params[2], idxtype=params[3],\
+                                           dsize=params[4], nsize=params[5])
             cached_defs[params] = defs
         kid = Template(kernels_srcs[letter]).render(argsort=argsort)
         prg = np.cl.Program(np.ctx, defs + kid).build()
@@ -43,6 +45,41 @@ def get_program(letter, params):
             print(kid)
         return prg
 
+def sort_b(arr, idx):
+    n = arr.size
+    allowb4  = True 
+    allowb8  = True 
+    allowb16 = True 
+    length = 1
+    while length<n:
+        inc = length;
+        while inc > 0:
+            ninc = 0;
+            direction = length<<1
+            if allowb16 and inc >= 8 and ninc == 0:
+                letter = 'B16'
+                ninc = 4;
+            elif allowb8 and inc >= 4 and ninc == 0:
+                letter = 'B8'
+                ninc = 3;
+            elif allowb4 and inc >= 2 and ninc == 0:
+                letter = 'B4'
+                ninc = 2;
+            elif inc >= 0:
+                letter = 'B2'
+                ninc = 1;
+            nThreads = n >> ninc;
+            wg = np.ctx.devices[0].max_work_group_size
+            wg = min(wg,256)
+            wg = min(wg,nThreads)
+            prg = get_program(letter, (inc, direction, 'float', 'uint',  arr.size, 1))
+            if argsort:
+                prg.run(np.queue, (nThreads,), (wg,), arr.data, idx.data)
+            else:
+                prg.run(np.queue, (nThreads,), (wg,), arr.data)
+            np.cl.enqueue_barrier(np.queue)
+            inc >>= ninc;
+        length<<=1
 
 def sort_c4(arr, idx):
     n = arr.size
@@ -126,9 +163,9 @@ def sort_c4(arr, idx):
         length<<=1
         #print("length =", length)
 
-sort_c4(arr.copy(), indexes.copy())
+sort_b(arr.copy(), indexes.copy())
 tsg = time.time()        
-sort_c4(arr, indexes)
+sort_b(arr, indexes)
 teg = time.time()
 
 print("Sorting {0} samples. Got {1} sec on CPU and {2} sec on GPU".format(sz, tec - tsc, teg - tsg))

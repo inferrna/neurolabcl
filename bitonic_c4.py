@@ -6,14 +6,14 @@ from mako.template import Template
 #np.cl.Program(np.ctx, tplsrc).build()
 defstpl = Template(bitonic_templates.defines)
 sz = pow(2, 15)
-arr = np.random.randn(sz)
+arr = np.random.randn(2, sz)
 out = np.empty(sz, dtype=arr.dtype)
 arrc = arr.get()
 
-arrs = np.np.sort(arrc)
+arrs = np.np.sort(arrc, axis=1)
 #arrc[99] = 0.199
 tsc = time.time()
-arrs = np.np.sort(arrc)
+arrs = np.np.sort(arrc, axis=1)
 tec = time.time()
 indexes = np.arange(sz)
 
@@ -45,11 +45,15 @@ def get_program(letter, params):
             print(kid)
         return prg
 
-def sort_b(arr, idx):
-    n = arr.size
-    allowb4  = True 
-    allowb8  = True 
-    allowb16 = True 
+def sort_b(arr, axis, idx):
+    n = arr.shape[axis]
+    m = np.np.prod(arr.shape)/arr.shape[axis]
+    ns = np.np.prod(arr.shape[axis:]) if axis<arr.ndim-1 else 1
+    ns = int(ns)
+    m = int(m)
+    allowb4  = False 
+    allowb8  = False 
+    allowb16 = False 
     length = 1
     while length<n:
         inc = length;
@@ -68,11 +72,12 @@ def sort_b(arr, idx):
             elif inc >= 0:
                 letter = 'B2'
                 ninc = 1;
-            nThreads = n >> ninc;
+            nThreads = (n*m) >> ninc;
+            print("ns == {0}, m == {1}, nThreads == {2}".format(ns, m, nThreads))
             wg = np.ctx.devices[0].max_work_group_size
             wg = min(wg,256)
             wg = min(wg,nThreads)
-            prg = get_program(letter, (inc, direction, 'float', 'uint',  arr.size, 1))
+            prg = get_program(letter, (inc, direction, 'float', 'uint',  n, ns))
             if argsort:
                 prg.run(np.queue, (nThreads,), (wg,), arr.data, idx.data)
             else:
@@ -163,9 +168,9 @@ def sort_c4(arr, idx):
         length<<=1
         #print("length =", length)
 
-sort_b(arr.copy(), indexes.copy())
-tsg = time.time()        
-sort_b(arr, indexes)
+sort_b(arr.copy(), 1, indexes.copy())
+tsg = time.time()
+sort_b(arr, 1, indexes)
 teg = time.time()
 
 print("Sorting {0} samples. Got {1} sec on CPU and {2} sec on GPU".format(sz, tec - tsc, teg - tsg))

@@ -52,7 +52,7 @@ typedef ${idxtype}2 idx_t2;
 #define B8V(x,a) { for (int i8=0;i8<4;i8++) { ORDERV(x,a+i8,a+i8+4) } B4V(x,a) B4V(x,a+4) }
 #define B16V(x,a) { for (int i16=0;i16<8;i16++) { ORDERV(x,a+i16,a+i16+8) } B8V(x,a) B8V(x,a+8) }
 % endif
-#define nsize ${nsize}   //Total next dimensions sizes sum.
+#define nsize ${nsize}   //Total next dimensions sizes sum. (Block size)
 #define dsize ${dsize}   //Dimension size
 """
 
@@ -66,22 +66,23 @@ __kernel void run(__global data_t * data\\
 )
 % endif
 {
-  int t = get_global_id(0); // thread index
+  int t  = (get_global_id(0) / nsize) % dsize; // thread index
+  int gi = get_global_id(0) / dsize; // block index
   int low = t & (inc - 1); // low order bits (below INC)
   int i = (t<<1) - low; // insert 0 at position INC
   bool reverse = ((dir & i) == 0); // asc/desc order
-  data  += i; // translate to first value
+  data  += i + gi; // translate to first value
 % if argsort:
-  index += i; // translate to first value
+  index += i + gi; // translate to first value
 % endif
 
   // Load data
   data_t x0 = data[  0];
-  data_t x1 = data[inc];
+  data_t x1 = data[inc*nsize];
 % if argsort:
   // Load index
   idx_t i0 = index[  0];
-  idx_t i1 = index[inc];
+  idx_t i1 = index[inc*nsize];
 % endif
 
   // Sort
@@ -93,11 +94,11 @@ __kernel void run(__global data_t * data\\
 
   // Store data
   data[0  ] = x0;
-  data[inc] = x1;
+  data[inc*nsize] = x1;
 % if argsort:
   // Store index
   index[  0] = i0;
-  index[inc] = i1;
+  index[inc*nsize] = i1;
 % endif
 }
 """

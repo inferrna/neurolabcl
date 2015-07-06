@@ -25,7 +25,7 @@ kernels_srcs = {'B2': bitonic_templates.ParallelBitonic_B2,
                 'B16':bitonic_templates.ParallelBitonic_B16,
                 'C4': bitonic_templates.ParallelBitonic_C4}
 
-argsort=0
+argsort=1
 
 def get_program(letter, params):
     if params in cached_progs[letter].keys():

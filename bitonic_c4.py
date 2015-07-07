@@ -6,11 +6,11 @@ from mako.template import Template
 #np.cl.Program(np.ctx, tplsrc).build()
 defstpl = Template(bitonic_templates.defines)
 sz = pow(2, 4)
-arr = np.random.randn(2, sz, 3)
+arr = np.random.randn(sz, 2, 3)
 out = np.empty(sz, dtype=arr.dtype)
 arrc = arr.get()
 
-sa = 1 #Sort axis
+sa = 0 #Sort axis
 
 arrs = np.np.sort(arrc, axis=sa)
 #arrc[99] = 0.199

@@ -66,14 +66,15 @@ __kernel void run(__global data_t * data\\
 )
 % endif
 {
-  int t  = get_global_id(0); // thread index
+  int t  = get_global_id(0) % dsize; // thread index
+  int gt = get_global_id(0) / dsize;
   int low = t & (inc - 1); // low order bits (below INC)
   int i = (t<<1) - low; // insert 0 at position INC
   int gi = i/dsize; // block index
   bool reverse = ((dir & i) == 0) ^ (gi%2); // asc/desc order
-  data  += i*nsize; // translate to first value
+  data  += i*nsize + gt; // translate to first value
 % if argsort:
-  index += i*nsize; // translate to first value
+  index += i*nsize + gt; // translate to first value
 % endif
 
   // Load data

@@ -5,15 +5,17 @@ from mako.template import Template
 
 #np.cl.Program(np.ctx, tplsrc).build()
 defstpl = Template(bitonic_templates.defines)
-sz = pow(2, 15)
-arr = np.random.randn(2, sz)
+sz = pow(2, 4)
+arr = np.random.randn(2, sz, 3)
 out = np.empty(sz, dtype=arr.dtype)
 arrc = arr.get()
 
-arrs = np.np.sort(arrc, axis=1)
+sa = 1 #Sort axis
+
+arrs = np.np.sort(arrc, axis=sa)
 #arrc[99] = 0.199
 tsc = time.time()
-arrs = np.np.sort(arrc, axis=1)
+arrs = np.np.sort(arrc, axis=sa)
 tec = time.time()
 indexes = np.arange(sz)
 
@@ -47,10 +49,11 @@ def get_program(letter, params):
 
 def sort_b(arr, axis, idx):
     n = arr.shape[axis]
-    m = np.np.prod(arr.shape)/arr.shape[axis]
-    ns = np.np.prod(arr.shape[axis:]) if axis<arr.ndim-1 else 1
+    ds = arr.shape[axis]
+    m = int(np.np.prod(arr.shape)/arr.shape[axis])
+    ns = np.np.prod(arr.shape[(axis+1):]) if axis<arr.ndim-1 else 1
     ns = int(ns)
-    m = int(m)
+    ds = int(ds)
     allowb4  = False 
     allowb8  = False 
     allowb16 = False 
@@ -72,12 +75,12 @@ def sort_b(arr, axis, idx):
             elif inc >= 0:
                 letter = 'B2'
                 ninc = 1;
-            nThreads = (n*m) >> ninc;
-            print("ns == {0}, m == {1}, nThreads == {2}".format(ns, m, nThreads))
+            nThreads = (arr.size) >> ninc;
+            print("dsize == {0}, nsize == {1}, nThreads == {2}".format(ds, ns, nThreads))
             wg = np.ctx.devices[0].max_work_group_size
             wg = min(wg,256)
             wg = min(wg,nThreads)
-            prg = get_program(letter, (inc, direction, 'float', 'uint',  n, ns))
+            prg = get_program(letter, (inc, direction, 'float', 'uint',  ds, ns))
             if argsort:
                 prg.run(np.queue, (nThreads,), (wg,), arr.data, idx.data)
             else:
@@ -168,9 +171,9 @@ def sort_c4(arr, idx):
         length<<=1
         #print("length =", length)
 
-sort_b(arr.copy(), 1, indexes.copy())
+sort_b(arr.copy(), sa, indexes.copy())
 tsg = time.time()
-sort_b(arr, 1, indexes)
+sort_b(arr, sa, indexes)
 teg = time.time()
 
 print("Sorting {0} samples. Got {1} sec on CPU and {2} sec on GPU".format(sz, tec - tsc, teg - tsg))

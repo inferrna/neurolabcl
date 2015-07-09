@@ -66,26 +66,28 @@ __kernel void run(__global data_t * data\\
 )
 % endif
 {
-  int t  = get_global_id(0) % (dsize/2); // thread index
-  int gt = get_global_id(0) / (dsize/2);
-  int low = t & (inc - 1); // low order bits (below INC)
-  int i = (t<<1) - low; // insert 0 at position INC
-  int gi = i/dsize; // block index
-  bool reverse = ((dir & i) == 0);// ^ (gi%2); // asc/desc order
+  int t  = get_global_id(0) % ((dsize+1)/2); // thread index
+  int gt = get_global_id(0) / ((dsize+1)/2);
+  int low = t & (inc - 1);         // low order bits (below INC)
+  int i = (t<<1) - low;            // insert 0 at position INC
+  bool reverse = ((dir & i) == 0); // asc/desc order
 
   int offset = (gt/nsize)*nsize*dsize+(gt%nsize);
-  data  += i*nsize + offset; // translate to first value
+  data  += offset; // translate to first value
 % if argsort:
-  index += i*nsize + offset; // translate to first value
+  index += offset; // translate to first value
 % endif
 
+  int curr = i*nsize;
+  int next = select(inc+i, i, (uint) (inc+i >= dsize-1))*nsize;
+  printf("curr==%d, next==%d\\n", curr, next);
   // Load data
-  data_t x0 = data[  0];
-  data_t x1 = data[inc*nsize];
+  data_t x0 = data[curr];
+  data_t x1 = data[next];
 % if argsort:
   // Load index
-  idx_t i0 = index[  0];
-  idx_t i1 = index[inc*nsize];
+  idx_t i0 = index[curr];
+  idx_t i1 = index[next];
 % endif
 
   // Sort
@@ -96,12 +98,12 @@ __kernel void run(__global data_t * data\\
 % endif
 
   // Store data
-  data[0  ] = x0;
-  data[inc*nsize] = x1;
+  data[curr] = x0;
+  data[next] = x1;
 % if argsort:
   // Store index
-  index[  0] = i0;
-  index[inc*nsize] = i1;
+  index[curr] = i0;
+  index[next] = i1;
 % endif
 }
 """

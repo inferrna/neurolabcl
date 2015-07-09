@@ -5,12 +5,12 @@ from mako.template import Template
 
 #np.cl.Program(np.ctx, tplsrc).build()
 defstpl = Template(bitonic_templates.defines)
-sz = pow(2, 4)
-arr = np.random.randn(2, 3, sz)
+sz = pow(2, 4) - 1
+arr = np.random.randn(2, sz)
 out = np.empty(sz, dtype=arr.dtype)
 arrc = arr.get()
 
-sa = 2 #Sort axis
+sa = 1 #Sort axis
 
 arrs = np.np.sort(arrc, axis=sa)
 #arrc[99] = 0.199
@@ -54,6 +54,7 @@ def sort_b(arr, axis, idx):
     ns = np.np.prod(arr.shape[(axis+1):]) if axis<arr.ndim-1 else 1
     ns = int(ns)
     ds = int(ds)
+    fksz = arr.size + (arr.shape[axis] % 2) * m
     allowb4  = False 
     allowb8  = False 
     allowb16 = False 
@@ -75,8 +76,8 @@ def sort_b(arr, axis, idx):
             elif inc >= 0:
                 letter = 'B2'
                 ninc = 1;
-            nThreads = (arr.size) >> ninc;
-            print("dsize == {0}, nsize == {1}, nThreads == {2}".format(ds, ns, nThreads))
+            nThreads = (fksz) >> ninc;
+            print("dsize == {0}, nsize == {1}, nThreads == {2}, fakesize = {3}".format(ds, ns, nThreads, fksz))
             wg = np.ctx.devices[0].max_work_group_size
             wg = min(wg,256)
             wg = min(wg,nThreads)

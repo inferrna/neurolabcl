@@ -6,7 +6,7 @@ from mako.template import Template
 #np.cl.Program(np.ctx, tplsrc).build()
 defstpl = Template(bitonic_templates.defines)
 sz = pow(2, 14)
-arr = np.random.randn(2, 3, 3, sz)
+arr = np.random.randn(2, 3, 3, sz).astype(np.np.float64)
 out = np.empty(sz, dtype=arr.dtype)
 arrc = arr.get()
 
@@ -81,7 +81,7 @@ def sort_b(arr, axis, idx):
             #wg = min(maxwg,nThreads)
             #if nThreads % wg:
             #    wg = nThreads // (1+nThreads//wg)
-            prg = get_program(letter, (inc, direction, 'float', 'uint',  ds, ns))
+            prg = get_program(letter, (inc, direction, 'double', 'uint',  ds, ns))
             if argsort:
                 prg.run(np.queue, (nThreads,), None, arr.data, idx.data)
             else:

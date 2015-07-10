@@ -5,12 +5,12 @@ from mako.template import Template
 
 #np.cl.Program(np.ctx, tplsrc).build()
 defstpl = Template(bitonic_templates.defines)
-sz = pow(2, 10)
-arr = np.random.randn(2, sz, 3)
+sz = pow(2, 14)
+arr = np.random.randn(2, 3, 3, sz)
 out = np.empty(sz, dtype=arr.dtype)
 arrc = arr.get()
 
-sa = 1 #Sort axis
+sa = 3 #Sort axis
 
 arrs = np.np.sort(arrc, axis=sa)
 #arrc[99] = 0.199
@@ -55,8 +55,8 @@ def sort_b(arr, axis, idx):
     ns = int(ns)
     ds = int(ds)
     allowb4  = True
-    allowb8  = False 
-    allowb16 = False 
+    allowb8  = True
+    allowb16 = True
     length = 1
     while length<n:
         inc = length;
@@ -76,15 +76,16 @@ def sort_b(arr, axis, idx):
                 letter = 'B2'
                 ninc = 1;
             nThreads = (arr.size) >> ninc;
+            #maxwg = np.ctx.devices[0].max_work_group_size
             print("dsize == {0}, nsize == {1}, nThreads == {2}".format(ds, ns, nThreads))
-            wg = np.ctx.devices[0].max_work_group_size
-            wg = min(wg,256)
-            wg = min(wg,nThreads)
+            #wg = min(maxwg,nThreads)
+            #if nThreads % wg:
+            #    wg = nThreads // (1+nThreads//wg)
             prg = get_program(letter, (inc, direction, 'float', 'uint',  ds, ns))
             if argsort:
-                prg.run(np.queue, (nThreads,), (wg,), arr.data, idx.data)
+                prg.run(np.queue, (nThreads,), None, arr.data, idx.data)
             else:
-                prg.run(np.queue, (nThreads,), (wg,), arr.data)
+                prg.run(np.queue, (nThreads,), None, arr.data)
             np.cl.enqueue_barrier(np.queue)
             inc >>= ninc;
         length<<=1

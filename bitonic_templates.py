@@ -178,13 +178,16 @@ __kernel void run(__global data_t * data\\
 )
 % endif
 {
-  int t = get_global_id(0); // thread index
+  int t  = get_global_id(0) % (dsize>>3); // thread index
+  int gt = get_global_id(0) / (dsize>>3);
   int low = t & (qinc - 1); // low order bits (below INC)
   int i = ((t - low) << 3) + low; // insert 000 at position INC
   bool reverse = ((dir & i) == 0); // asc/desc order
-  data  += i; // translate to first value
+  int offset = (gt/nsize)*nsize*dsize+(gt%nsize);
+
+  data  += i*nsize + offset; // translate to first value
 % if argsort:
-  index += i; // translate to first value
+  index += i*nsize + offset; // translate to first value
 % endif
 
   // Load
@@ -192,9 +195,9 @@ __kernel void run(__global data_t * data\\
 % if argsort:
   idx_t y[8];
 % endif
-  for (int k=0;k<8;k++) x[k] = data[k*qinc];
+  for (int k=0;k<8;k++) x[k] = data[k*qinc*nsize];
 % if argsort:
-  for (int k=0;k<8;k++) y[k] = index[k*qinc];
+  for (int k=0;k<8;k++) y[k] = index[k*qinc*nsize];
 % endif
 
   // Sort
@@ -205,9 +208,9 @@ __kernel void run(__global data_t * data\\
 % endif
 
   // Store
-  for (int k=0;k<8;k++) data[k*qinc] = x[k];
+  for (int k=0;k<8;k++) data[k*qinc*nsize] = x[k];
 % if argsort:
-  for (int k=0;k<8;k++) index[k*qinc] = y[k];
+  for (int k=0;k<8;k++) index[k*qinc*nsize] = y[k];
 % endif
 }
 """
@@ -222,13 +225,16 @@ __kernel void run(__global data_t * data\\
 )
 % endif
 {
-  int t = get_global_id(0); // thread index
+  int t  = get_global_id(0) % (dsize>>4); // thread index
+  int gt = get_global_id(0) / (dsize>>4);
   int low = t & (einc - 1); // low order bits (below INC)
   int i = ((t - low) << 4) + low; // insert 0000 at position INC
   bool reverse = ((dir & i) == 0); // asc/desc order
-  data  += i; // translate to first value
+  int offset = (gt/nsize)*nsize*dsize+(gt%nsize);
+
+  data  += i*nsize + offset; // translate to first value
 % if argsort:
-  index += i; // translate to first value
+  index += i*nsize + offset; // translate to first value
 % endif
 
   // Load
@@ -236,9 +242,9 @@ __kernel void run(__global data_t * data\\
 % if argsort:
   idx_t y[16];
 % endif
-  for (int k=0;k<16;k++) x[k] = data[k*einc];
+  for (int k=0;k<16;k++) x[k] = data[k*einc*nsize];
 % if argsort:
-  for (int k=0;k<16;k++) y[k] = index[k*einc];
+  for (int k=0;k<16;k++) y[k] = index[k*einc*nsize];
 % endif
 
   // Sort
@@ -249,9 +255,9 @@ __kernel void run(__global data_t * data\\
 % endif
 
   // Store
-  for (int k=0;k<16;k++) data[k*einc] = x[k];
+  for (int k=0;k<16;k++) data[k*einc*nsize] = x[k];
 % if argsort:
-  for (int k=0;k<16;k++) index[k*einc] = y[k];
+  for (int k=0;k<16;k++) index[k*einc*nsize] = y[k];
 % endif
 }
 """

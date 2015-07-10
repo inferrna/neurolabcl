@@ -66,8 +66,8 @@ __kernel void run(__global data_t * data\\
 )
 % endif
 {
-  int t  = get_global_id(0) % (dsize/2); // thread index
-  int gt = get_global_id(0) / (dsize/2);
+  int t  = get_global_id(0) % (dsize>>1); // thread index
+  int gt = get_global_id(0) / (dsize>>1);
   int low = t & (inc - 1); // low order bits (below INC)
   int i = (t<<1) - low; // insert 0 at position INC
   int gi = i/dsize; // block index
@@ -116,26 +116,28 @@ __kernel void run(__global data_t * data\\
 )
 % endif
 {
-  int t = get_global_id(0); // thread index
+  int t  = get_global_id(0) % (dsize>>2); // thread index
+  int gt = get_global_id(0) / (dsize>>2);
   int low = t & (hinc - 1); // low order bits (below INC)
   int i = ((t - low) << 2) + low; // insert 00 at position INC
   bool reverse = ((dir & i) == 0); // asc/desc order
-  data  += i; // translate to first value
+  int offset = (gt/nsize)*nsize*dsize+(gt%nsize);
+  data  += i*nsize + offset; // translate to first value
 % if argsort:
-  index += i; // translate to first value
+  index += i*nsize + offset; // translate to first value
 % endif
 
   // Load data
   data_t x0 = data[     0];
-  data_t x1 = data[  hinc];
-  data_t x2 = data[2*hinc];
-  data_t x3 = data[3*hinc];
+  data_t x1 = data[  hinc*nsize];
+  data_t x2 = data[2*hinc*nsize];
+  data_t x3 = data[3*hinc*nsize];
 % if argsort:
   // Load index
   idx_t i0 = index[     0];
-  idx_t i1 = index[  hinc];
-  idx_t i2 = index[2*hinc];
-  idx_t i3 = index[3*hinc];
+  idx_t i1 = index[  hinc*nsize];
+  idx_t i2 = index[2*hinc*nsize];
+  idx_t i3 = index[3*hinc*nsize];
 % endif
 
   // Sort
@@ -153,15 +155,15 @@ __kernel void run(__global data_t * data\\
 
   // Store data
   data[     0] = x0;
-  data[  hinc] = x1;
-  data[2*hinc] = x2;
-  data[3*hinc] = x3;
+  data[  hinc*nsize] = x1;
+  data[2*hinc*nsize] = x2;
+  data[3*hinc*nsize] = x3;
 % if argsort:
   // Store index
   index[     0] = i0;
-  index[  hinc] = i1;
-  index[2*hinc] = i2;
-  index[3*hinc] = i3;
+  index[  hinc*nsize] = i1;
+  index[2*hinc*nsize] = i2;
+  index[3*hinc*nsize] = i3;
 % endif
 }
 """

@@ -5,12 +5,12 @@ from mako.template import Template
 
 #np.cl.Program(np.ctx, tplsrc).build()
 defstpl = Template(bitonic_templates.defines)
-sz = pow(2, 4)
-arr = np.random.randn(2, 3, sz)
+sz = pow(2, 10)
+arr = np.random.randn(2, sz, 3)
 out = np.empty(sz, dtype=arr.dtype)
 arrc = arr.get()
 
-sa = 2 #Sort axis
+sa = 1 #Sort axis
 
 arrs = np.np.sort(arrc, axis=sa)
 #arrc[99] = 0.199
@@ -54,7 +54,7 @@ def sort_b(arr, axis, idx):
     ns = np.np.prod(arr.shape[(axis+1):]) if axis<arr.ndim-1 else 1
     ns = int(ns)
     ds = int(ds)
-    allowb4  = False 
+    allowb4  = True
     allowb8  = False 
     allowb16 = False 
     length = 1

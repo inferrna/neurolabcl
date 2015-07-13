@@ -7,7 +7,7 @@ from functools import reduce
 
 #np.cl.Program(np.ctx, tplsrc).build()
 defstpl = Template(bitonic_templates.defines)
-sz = pow(2, 20)
+sz = 768 #pow(2, 20)
 arr = np.random.randn(sz) #.astype(np.np.float64)
 out = np.empty(sz, dtype=arr.dtype)
 arrc = arr.get()
@@ -53,9 +53,9 @@ def sort_b_prepare(shape, axis):
     size = reduce(mul, shape)
     ndim = len(shape)
     ns = reduce(mul, shape[(axis+1):]) if axis<ndim-1 else 1
-    allowb4  = True
-    allowb8  = True
-    allowb16 = True
+    allowb4  = False 
+    allowb8  = False 
+    allowb16 = False 
     length = 1
     while length<ds:
         inc = length;
@@ -169,21 +169,19 @@ def sort_c4_run(arr, rqm, idx=None):
                 p.run(np.queue, (nt,), None, arr.data, idx.data, lx, ly)
             else:                      
                 p.run(np.queue, (nt,), None, arr.data, idx.data)
-            np.cl.enqueue_barrier(np.queue)
     else:
         for p, nt, dl in rq:
             if dl:
                 p.run(np.queue, (nt,), None, arr.data, lx)
             else:                      
                 p.run(np.queue, (nt,), None, arr.data)
-            np.cl.enqueue_barrier(np.queue)
 
-rq = sort_c4_prepare(arr.shape, sa)
+rq = sort_b_prepare(arr.shape, sa)
 tsg = time.time()
 if argsort:
-    sort_c4_run(arr, rq, indexes)
+    sort_b_run(arr, rq, indexes)
 else:
-    sort_c4_run(arr, rq)
+    sort_b_run(arr, rq)
 teg = time.time()
 
 print("Sorting {0} samples. Got {1} sec on CPU and {2} sec on GPU".format(sz, tec - tsc, teg - tsg))

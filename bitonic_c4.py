@@ -52,7 +52,6 @@ def sort_b_prepare(shape, axis):
     ds = int(shape[axis])
     size = reduce(mul, shape)
     ndim = len(shape)
-    #m = int(size/shape[axis])
     ns = reduce(mul, shape[(axis+1):]) if axis<ndim-1 else 1
     allowb4  = True
     allowb8  = True
@@ -153,26 +152,8 @@ def sort_c4_prepare(shape, axis):
                 nThreads = n >> ninc;
             else:
                 print("Strategy error!");
-            #print("inc ==", inc)
-            wg = min(mwg,256)
-            wg = min(wg,nThreads)
             prg = get_program(letter, (inc, direction, 'float', 'uint',  ds, ns))
-            #if doLocal>0:
-            #    localmemx = np.cl.LocalMemory(wg*doLocal*arr.dtype.itemsize)
-            #    if argsort:
-            #        localmemy = np.cl.LocalMemory(wg*doLocal*indexes.dtype.itemsize)
-            #        prg.run(np.queue, (nThreads,), (wg,), arr.data, idx.data, localmemx, localmemy)
-            #    else:
-            #        prg.run(np.queue, (nThreads,), (wg,), arr.data, localmemx)
-            #else:
-            #    if argsort:
-            #        prg.run(np.queue, (nThreads,), (wg,), arr.data, idx.data)
-            #    else:
-            #        prg.run(np.queue, (nThreads,), (wg,), arr.data)
-            #np.cl.enqueue_barrier(np.queue)
-            run_queue.append((prg, nThreads, wg, doLocal>0))
-            #c->enqueueBarrier(targetDevice); // sync
-            # if (mLastN != n) printf("LENGTH=%d INC=%d KID=%d\n",length,inc,kid); // DEBUG
+            run_queue.append((prg, nThreads, doLocal>0))
             if ninc < 0: break
             inc >>= ninc
         length<<=1
@@ -183,14 +164,14 @@ def sort_c4_run(arr, rqm, idx=None):
     rq = rqm['q']
     lx, ly = rqm['mems']
     if argsort:
-        for p, nt, wg, dl in rq:
+        for p, nt, dl in rq:
             if dl:
                 p.run(np.queue, (nt,), None, arr.data, idx.data, lx, ly)
             else:                      
                 p.run(np.queue, (nt,), None, arr.data, idx.data)
             np.cl.enqueue_barrier(np.queue)
     else:
-        for p, nt, wg, dl in rq:
+        for p, nt, dl in rq:
             if dl:
                 p.run(np.queue, (nt,), None, arr.data, lx)
             else:                      

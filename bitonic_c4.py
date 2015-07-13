@@ -45,8 +45,6 @@ def get_program(letter, params):
         kid = Template(kernels_srcs[letter]).render(argsort=argsort)
         prg = np.cl.Program(np.ctx, defs + kid).build()
         cached_progs[letter][params] = prg
-        if letter=='B2':
-            print(kid)
         return prg
 
 def sort_b_prepare(shape, axis):
@@ -78,7 +76,7 @@ def sort_b_prepare(shape, axis):
                 letter = 'B2'
                 ninc = 1;
             nThreads = (size) >> ninc;
-            print("dsize == {0}, nsize == {1}, nThreads == {2}".format(ds, ns, nThreads))
+            #print("dsize == {0}, nsize == {1}, nThreads == {2}".format(ds, ns, nThreads))
             prg = get_program(letter, (inc, direction, 'float', 'uint',  ds, ns))
             run_queue.append((prg, nThreads,))
             inc >>= ninc;
@@ -178,7 +176,7 @@ def sort_c4_prepare(shape, axis):
             if ninc < 0: break
             inc >>= ninc
         length<<=1
-        return {'q': run_queue, 'mems': (np.cl.LocalMemory(mwg*4*4), np.cl.LocalMemory(mwg*4*4),)}
+    return {'q': run_queue, 'mems': (np.cl.LocalMemory(mwg*4*4), np.cl.LocalMemory(mwg*4*4),)}
         #print("length =", length)
 
 def sort_c4_run(arr, rqm, idx=None):
@@ -187,16 +185,16 @@ def sort_c4_run(arr, rqm, idx=None):
     if argsort:
         for p, nt, wg, dl in rq:
             if dl:
-                p.run(np.queue, (nt,), (wg,), arr.data, idx.data, lx, ly)
-            else:                           
-                p.run(np.queue, (nt,), (wg,), arr.data, idx.data)
+                p.run(np.queue, (nt,), None, arr.data, idx.data, lx, ly)
+            else:                      
+                p.run(np.queue, (nt,), None, arr.data, idx.data)
             np.cl.enqueue_barrier(np.queue)
     else:
         for p, nt, wg, dl in rq:
             if dl:
-                p.run(np.queue, (nt,), (wg,), arr.data, lx)
-            else:                           
-                p.run(np.queue, (nt,), (wg,), arr.data)
+                p.run(np.queue, (nt,), None, arr.data, lx)
+            else:                      
+                p.run(np.queue, (nt,), None, arr.data)
             np.cl.enqueue_barrier(np.queue)
 
 rq = sort_c4_prepare(arr.shape, sa)

@@ -52,8 +52,6 @@ typedef ${idxtype}2 idx_t2;
 #define B8V(x,a) { for (int i8=0;i8<4;i8++) { ORDERV(x,a+i8,a+i8+4) } B4V(x,a) B4V(x,a+4) }
 #define B16V(x,a) { for (int i16=0;i16<8;i16++) { ORDERV(x,a+i16,a+i16+8) } B8V(x,a) B8V(x,a+8) }
 % endif
-#define nsize ${nsize}   //Total next dimensions sizes sum. (Block size)
-#define dsize ${dsize}   //Dimension size
 """
 
 ParallelBitonic_B2 = """
@@ -66,26 +64,22 @@ __kernel void run(__global data_t * data\\
 )
 % endif
 {
-  int t  = get_global_id(0) % (dsize>>1); // thread index
-  int gt = get_global_id(0) / (dsize>>1);
+  int t = get_global_id(0); // thread index
   int low = t & (inc - 1); // low order bits (below INC)
   int i = (t<<1) - low; // insert 0 at position INC
-  int gi = i/dsize; // block index
-  bool reverse = ((dir & i) == 0);// ^ (gi%2); // asc/desc order
-
-  int offset = (gt/nsize)*nsize*dsize+(gt%nsize);
-  data  += i*nsize + offset; // translate to first value
+  bool reverse = ((dir & i) == 0); // asc/desc order
+  data  += i; // translate to first value
 % if argsort:
-  index += i*nsize + offset; // translate to first value
+  index += i; // translate to first value
 % endif
 
   // Load data
   data_t x0 = data[  0];
-  data_t x1 = data[inc*nsize];
+  data_t x1 = data[inc];
 % if argsort:
   // Load index
   idx_t i0 = index[  0];
-  idx_t i1 = index[inc*nsize];
+  idx_t i1 = index[inc];
 % endif
 
   // Sort
@@ -97,11 +91,11 @@ __kernel void run(__global data_t * data\\
 
   // Store data
   data[0  ] = x0;
-  data[inc*nsize] = x1;
+  data[inc] = x1;
 % if argsort:
   // Store index
   index[  0] = i0;
-  index[inc*nsize] = i1;
+  index[inc] = i1;
 % endif
 }
 """
@@ -116,28 +110,26 @@ __kernel void run(__global data_t * data\\
 )
 % endif
 {
-  int t  = get_global_id(0) % (dsize>>2); // thread index
-  int gt = get_global_id(0) / (dsize>>2);
+  int t = get_global_id(0); // thread index
   int low = t & (hinc - 1); // low order bits (below INC)
   int i = ((t - low) << 2) + low; // insert 00 at position INC
   bool reverse = ((dir & i) == 0); // asc/desc order
-  int offset = (gt/nsize)*nsize*dsize+(gt%nsize);
-  data  += i*nsize + offset; // translate to first value
+  data  += i; // translate to first value
 % if argsort:
-  index += i*nsize + offset; // translate to first value
+  index += i; // translate to first value
 % endif
 
   // Load data
   data_t x0 = data[     0];
-  data_t x1 = data[  hinc*nsize];
-  data_t x2 = data[2*hinc*nsize];
-  data_t x3 = data[3*hinc*nsize];
+  data_t x1 = data[  hinc];
+  data_t x2 = data[2*hinc];
+  data_t x3 = data[3*hinc];
 % if argsort:
   // Load index
   idx_t i0 = index[     0];
-  idx_t i1 = index[  hinc*nsize];
-  idx_t i2 = index[2*hinc*nsize];
-  idx_t i3 = index[3*hinc*nsize];
+  idx_t i1 = index[  hinc];
+  idx_t i2 = index[2*hinc];
+  idx_t i3 = index[3*hinc];
 % endif
 
   // Sort
@@ -155,15 +147,15 @@ __kernel void run(__global data_t * data\\
 
   // Store data
   data[     0] = x0;
-  data[  hinc*nsize] = x1;
-  data[2*hinc*nsize] = x2;
-  data[3*hinc*nsize] = x3;
+  data[  hinc] = x1;
+  data[2*hinc] = x2;
+  data[3*hinc] = x3;
 % if argsort:
   // Store index
   index[     0] = i0;
-  index[  hinc*nsize] = i1;
-  index[2*hinc*nsize] = i2;
-  index[3*hinc*nsize] = i3;
+  index[  hinc] = i1;
+  index[2*hinc] = i2;
+  index[3*hinc] = i3;
 % endif
 }
 """
@@ -178,16 +170,13 @@ __kernel void run(__global data_t * data\\
 )
 % endif
 {
-  int t  = get_global_id(0) % (dsize>>3); // thread index
-  int gt = get_global_id(0) / (dsize>>3);
+  int t = get_global_id(0); // thread index
   int low = t & (qinc - 1); // low order bits (below INC)
   int i = ((t - low) << 3) + low; // insert 000 at position INC
   bool reverse = ((dir & i) == 0); // asc/desc order
-  int offset = (gt/nsize)*nsize*dsize+(gt%nsize);
-
-  data  += i*nsize + offset; // translate to first value
+  data  += i; // translate to first value
 % if argsort:
-  index += i*nsize + offset; // translate to first value
+  index += i; // translate to first value
 % endif
 
   // Load
@@ -195,9 +184,9 @@ __kernel void run(__global data_t * data\\
 % if argsort:
   idx_t y[8];
 % endif
-  for (int k=0;k<8;k++) x[k] = data[k*qinc*nsize];
+  for (int k=0;k<8;k++) x[k] = data[k*qinc];
 % if argsort:
-  for (int k=0;k<8;k++) y[k] = index[k*qinc*nsize];
+  for (int k=0;k<8;k++) y[k] = index[k*qinc];
 % endif
 
   // Sort
@@ -208,9 +197,9 @@ __kernel void run(__global data_t * data\\
 % endif
 
   // Store
-  for (int k=0;k<8;k++) data[k*qinc*nsize] = x[k];
+  for (int k=0;k<8;k++) data[k*qinc] = x[k];
 % if argsort:
-  for (int k=0;k<8;k++) index[k*qinc*nsize] = y[k];
+  for (int k=0;k<8;k++) index[k*qinc] = y[k];
 % endif
 }
 """
@@ -225,16 +214,13 @@ __kernel void run(__global data_t * data\\
 )
 % endif
 {
-  int t  = get_global_id(0) % (dsize>>4); // thread index
-  int gt = get_global_id(0) / (dsize>>4);
+  int t = get_global_id(0); // thread index
   int low = t & (einc - 1); // low order bits (below INC)
   int i = ((t - low) << 4) + low; // insert 0000 at position INC
   bool reverse = ((dir & i) == 0); // asc/desc order
-  int offset = (gt/nsize)*nsize*dsize+(gt%nsize);
-
-  data  += i*nsize + offset; // translate to first value
+  data  += i; // translate to first value
 % if argsort:
-  index += i*nsize + offset; // translate to first value
+  index += i; // translate to first value
 % endif
 
   // Load
@@ -242,9 +228,9 @@ __kernel void run(__global data_t * data\\
 % if argsort:
   idx_t y[16];
 % endif
-  for (int k=0;k<16;k++) x[k] = data[k*einc*nsize];
+  for (int k=0;k<16;k++) x[k] = data[k*einc];
 % if argsort:
-  for (int k=0;k<16;k++) y[k] = index[k*einc*nsize];
+  for (int k=0;k<16;k++) y[k] = index[k*einc];
 % endif
 
   // Sort
@@ -255,9 +241,9 @@ __kernel void run(__global data_t * data\\
 % endif
 
   // Store
-  for (int k=0;k<16;k++) data[k*einc*nsize] = x[k];
+  for (int k=0;k<16;k++) data[k*einc] = x[k];
 % if argsort:
-  for (int k=0;k<16;k++) index[k*einc*nsize] = y[k];
+  for (int k=0;k<16;k++) index[k*einc] = y[k];
 % endif
 }
 """

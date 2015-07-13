@@ -2,15 +2,17 @@ import mynp as np
 import time
 import bitonic_templates
 from mako.template import Template
+from operator import mul
+from functools import reduce
 
 #np.cl.Program(np.ctx, tplsrc).build()
 defstpl = Template(bitonic_templates.defines)
-sz = pow(2, 14)
-arr = np.random.randn(2, 3, 3, sz).astype(np.np.float64)
+sz = pow(2, 20)
+arr = np.random.randn(sz) #.astype(np.np.float64)
 out = np.empty(sz, dtype=arr.dtype)
 arrc = arr.get()
 
-sa = 3 #Sort axis
+sa = 0 #Sort axis
 
 arrs = np.np.sort(arrc, axis=sa)
 #arrc[99] = 0.199
@@ -47,18 +49,18 @@ def get_program(letter, params):
             print(kid)
         return prg
 
-def sort_b(arr, axis, idx):
-    n = arr.shape[axis]
-    ds = arr.shape[axis]
-    m = int(np.np.prod(arr.shape)/arr.shape[axis])
-    ns = np.np.prod(arr.shape[(axis+1):]) if axis<arr.ndim-1 else 1
-    ns = int(ns)
-    ds = int(ds)
+def sort_b_prepare(shape, axis):
+    run_queue = []
+    ds = int(shape[axis])
+    size = reduce(mul, shape)
+    ndim = len(shape)
+    #m = int(size/shape[axis])
+    ns = reduce(mul, shape[(axis+1):]) if axis<ndim-1 else 1
     allowb4  = True
     allowb8  = True
     allowb16 = True
     length = 1
-    while length<n:
+    while length<ds:
         inc = length;
         while inc > 0:
             ninc = 0;
@@ -75,28 +77,35 @@ def sort_b(arr, axis, idx):
             elif inc >= 0:
                 letter = 'B2'
                 ninc = 1;
-            nThreads = (arr.size) >> ninc;
-            #maxwg = np.ctx.devices[0].max_work_group_size
+            nThreads = (size) >> ninc;
             print("dsize == {0}, nsize == {1}, nThreads == {2}".format(ds, ns, nThreads))
-            #wg = min(maxwg,nThreads)
-            #if nThreads % wg:
-            #    wg = nThreads // (1+nThreads//wg)
-            prg = get_program(letter, (inc, direction, 'double', 'uint',  ds, ns))
-            if argsort:
-                prg.run(np.queue, (nThreads,), None, arr.data, idx.data)
-            else:
-                prg.run(np.queue, (nThreads,), None, arr.data)
-            np.cl.enqueue_barrier(np.queue)
+            prg = get_program(letter, (inc, direction, 'float', 'uint',  ds, ns))
+            run_queue.append((prg, nThreads,))
             inc >>= ninc;
         length<<=1
+    return run_queue
 
-def sort_c4(arr, idx):
-    n = arr.size
+def sort_b_run(arr, rq, idx=None):
+    if argsort:
+        for p, nt in rq:
+            p.run(np.queue, (nt,), None, arr.data, idx.data)
+    else:
+        for p, nt in rq:
+            p.run(np.queue, (nt,), None, arr.data)
+
+
+def sort_c4_prepare(shape, axis):
+    run_queue = []
+    size = shape[0]
+    n = size
+    ds = n
+    ns = 1
+    mwg = np.ctx.devices[0].max_work_group_size
     allowb4  = True 
     allowb8  = True 
     allowb16 = True 
     length = 1
-    while length<n:
+    while length<size:
         inc = length
         strategy = []
         ii = inc
@@ -147,34 +156,55 @@ def sort_c4(arr, idx):
             else:
                 print("Strategy error!");
             #print("inc ==", inc)
-            wg = np.ctx.devices[0].max_work_group_size
-            wg = min(wg,256)
+            wg = min(mwg,256)
             wg = min(wg,nThreads)
-            #prg = np.cl.Program(np.ctx, defs + kid).build()
-            prg = get_program(letter, (inc, direction, 'float', 'uint',))
-            if doLocal>0:
-                localmemx = np.cl.LocalMemory(wg*doLocal*arr.dtype.itemsize)
-                if argsort:
-                    localmemy = np.cl.LocalMemory(wg*doLocal*indexes.dtype.itemsize)
-                    prg.run(np.queue, (nThreads,), (wg,), arr.data, idx.data, localmemx, localmemy)
-                else:
-                    prg.run(np.queue, (nThreads,), (wg,), arr.data, localmemx)
-            else:
-                if argsort:
-                    prg.run(np.queue, (nThreads,), (wg,), arr.data, idx.data)
-                else:
-                    prg.run(np.queue, (nThreads,), (wg,), arr.data)
-            np.cl.enqueue_barrier(np.queue)
+            prg = get_program(letter, (inc, direction, 'float', 'uint',  ds, ns))
+            #if doLocal>0:
+            #    localmemx = np.cl.LocalMemory(wg*doLocal*arr.dtype.itemsize)
+            #    if argsort:
+            #        localmemy = np.cl.LocalMemory(wg*doLocal*indexes.dtype.itemsize)
+            #        prg.run(np.queue, (nThreads,), (wg,), arr.data, idx.data, localmemx, localmemy)
+            #    else:
+            #        prg.run(np.queue, (nThreads,), (wg,), arr.data, localmemx)
+            #else:
+            #    if argsort:
+            #        prg.run(np.queue, (nThreads,), (wg,), arr.data, idx.data)
+            #    else:
+            #        prg.run(np.queue, (nThreads,), (wg,), arr.data)
+            #np.cl.enqueue_barrier(np.queue)
+            run_queue.append((prg, nThreads, wg, doLocal>0))
             #c->enqueueBarrier(targetDevice); // sync
             # if (mLastN != n) printf("LENGTH=%d INC=%d KID=%d\n",length,inc,kid); // DEBUG
             if ninc < 0: break
             inc >>= ninc
         length<<=1
+        return {'q': run_queue, 'mems': (np.cl.LocalMemory(mwg*4*4), np.cl.LocalMemory(mwg*4*4),)}
         #print("length =", length)
 
-sort_b(arr.copy(), sa, indexes.copy())
+def sort_c4_run(arr, rqm, idx=None):
+    rq = rqm['q']
+    lx, ly = rqm['mems']
+    if argsort:
+        for p, nt, wg, dl in rq:
+            if dl:
+                p.run(np.queue, (nt,), (wg,), arr.data, idx.data, lx, ly)
+            else:                           
+                p.run(np.queue, (nt,), (wg,), arr.data, idx.data)
+            np.cl.enqueue_barrier(np.queue)
+    else:
+        for p, nt, wg, dl in rq:
+            if dl:
+                p.run(np.queue, (nt,), (wg,), arr.data, lx)
+            else:                           
+                p.run(np.queue, (nt,), (wg,), arr.data)
+            np.cl.enqueue_barrier(np.queue)
+
+rq = sort_c4_prepare(arr.shape, sa)
 tsg = time.time()
-sort_b(arr, sa, indexes)
+if argsort:
+    sort_c4_run(arr, rq, indexes)
+else:
+    sort_c4_run(arr, rq)
 teg = time.time()
 
 print("Sorting {0} samples. Got {1} sec on CPU and {2} sec on GPU".format(sz, tec - tsc, teg - tsg))

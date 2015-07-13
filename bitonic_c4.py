@@ -4,12 +4,13 @@ import bitonic_templates
 from mako.template import Template
 from operator import mul
 from functools import reduce
+from math import log2
 
 #np.cl.Program(np.ctx, tplsrc).build()
 defstpl = Template(bitonic_templates.defines)
-sz = 768 #pow(2, 20)
+sz = pow(2, 8)
 arr = np.random.randn(sz) #.astype(np.np.float64)
-out = np.empty(sz, dtype=arr.dtype)
+out = np.zeros(sz, dtype=arr.dtype)
 arrc = arr.get()
 
 sa = 0 #Sort axis
@@ -22,13 +23,16 @@ tec = time.time()
 indexes = np.arange(sz)
 
 cached_defs = {}
-cached_progs = {'B2':{}, 'B4':{}, 'B8':{}, 'B16':{}, 'C4':{}}
+cached_progs = {'B2':{}, 'B4':{}, 'B8':{}, 'B16':{}, 'C4':{}, 'BLO':{}, 'BL':{}}
 kernels_srcs = {'B2': bitonic_templates.ParallelBitonic_B2,
                 'B4': bitonic_templates.ParallelBitonic_B4,
                 'B8': bitonic_templates.ParallelBitonic_B8,
                 'B16':bitonic_templates.ParallelBitonic_B16,
-                'C4': bitonic_templates.ParallelBitonic_C4}
+                'C4': bitonic_templates.ParallelBitonic_C4,
+                'BL': bitonic_templates.ParallelBitonic_Local,
+                'BLO':bitonic_templates.ParallelBitonic_Local_Optim}
 
+mwg = np.ctx.devices[0].max_work_group_size
 argsort=1
 
 def get_program(letter, params):
@@ -74,7 +78,7 @@ def sort_b_prepare(shape, axis):
             elif inc >= 0:
                 letter = 'B2'
                 ninc = 1;
-            nThreads = (size) >> ninc;
+            nThreads = size >> ninc;
             #print("dsize == {0}, nsize == {1}, nThreads == {2}".format(ds, ns, nThreads))
             prg = get_program(letter, (inc, direction, 'float', 'uint',  ds, ns))
             run_queue.append((prg, nThreads,))
@@ -91,13 +95,17 @@ def sort_b_run(arr, rq, idx=None):
             p.run(np.queue, (nt,), None, arr.data)
 
 
+def sort_bitonic_local_prepare(shape):
+    ds = shape[0]
+    return get_program('BL', (1, 1, 'float', 'uint', ds, 1))
+
+
 def sort_c4_prepare(shape, axis):
     run_queue = []
     size = shape[0]
     n = size
     ds = n
     ns = 1
-    mwg = np.ctx.devices[0].max_work_group_size
     allowb4  = True 
     allowb8  = True 
     allowb16 = True 
@@ -176,15 +184,17 @@ def sort_c4_run(arr, rqm, idx=None):
             else:                      
                 p.run(np.queue, (nt,), None, arr.data)
 
-rq = sort_b_prepare(arr.shape, sa)
-tsg = time.time()
-if argsort:
-    sort_b_run(arr, rq, indexes)
-else:
-    sort_b_run(arr, rq)
-teg = time.time()
+prg = sort_bitonic_local_prepare(arr.shape)
+prg.run(np.queue, arr.shape, None, arr.data, out.data, np.cl.LocalMemory(mwg*4*4))
+#rq = sort_b_prepare(arr.shape, sa)
+#tsg = time.time()
+#if argsort:
+#    sort_b_run(arr, rq, indexes)
+#else:
+#    sort_b_run(arr, rq)
+#teg = time.time()
 
-print("Sorting {0} samples. Got {1} sec on CPU and {2} sec on GPU".format(sz, tec - tsc, teg - tsg))
+#print("Sorting {0} samples. Got {1} sec on CPU and {2} sec on GPU".format(sz, tec - tsc, teg - tsg))
 
 #singleprogram.ParallelBitonic_C4(np.queue, (arr.size,), None, arr.data, np.np.int32(32), np.np.int32(0), localmem)
 #singleprogram.ParallelMerge_Local(np.queue, (arr.size,), None, arr.data, out.data, localmem)

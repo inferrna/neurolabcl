@@ -8,14 +8,15 @@ from math import log2
 
 #np.cl.Program(np.ctx, tplsrc).build()
 defstpl = Template(bitonic_templates.defines)
-sz = pow(2, 20)
-arr = np.random.randn(sz) #.astype(np.np.float64)
-out = np.zeros(sz, dtype=arr.dtype)
+sz = pow(2, 12)
+gshape = (3, sz, 5,)
+arr = np.random.randn(*gshape) #.astype(np.np.float64)
+out = np.zeros(gshape, dtype=arr.dtype)
 arrc = arr.get()
 
-sa = 0 #Sort axis
+sa = 1 #Sort axis
 
-arrs = np.np.sort(arrc, axis=sa)
+arrs = np.np.sort(arr.get(), axis=sa)
 #arrc[99] = 0.199
 tsc = time.time()
 arrs = np.np.sort(arrc, axis=sa)
@@ -91,15 +92,16 @@ def sort_b_prepare(shape, axis):
 
 def sort_b_prepare_wl(shape, axis=0):
     run_queue = []
-    ds = int(shape[0])
-    size = ds
-    ndim = 1
-    ns = 1
+    ds = int(shape[axis])
+    size = reduce(mul, shape)
+    ndim = len(shape)
+    ns = reduce(mul, shape[(axis+1):]) if axis<ndim-1 else 1
+    ds = int(shape[axis])
     allowb4  = True 
     allowb8  = True 
     allowb16 = True 
     length = 128
-    prg = get_program('BLO', (1, 1, 'float', 'uint', ds, 1))
+    prg = get_program('BLO', (1, 1, 'float', 'uint', ds, ns))
     run_queue.append((prg, size, (256,), True))
     get_program('BLO', (1, 1, 'float', 'uint', ds, 1))
     while length<ds:

@@ -444,19 +444,23 @@ __kernel void run\\
 (__global data_t * data, __local data_t * aux)
 % endif
 {
+  int t  = get_global_id(0) % dsize; // thread index
+  int gt = get_global_id(0) / dsize;
+  int offset = (gt/nsize)*nsize*dsize+(gt%nsize);
+
   int i = get_local_id(0); // index in workgroup
   int wg = get_local_size(0); // workgroup size = block size, power of 2
 
   // Move IN, OUT to block start
-  int offset = get_group_id(0) * wg;
+  //int offset = get_group_id(0) * wg;
   data += offset; 
   // Load block in AUX[WG]
-  data_t iData = data[i];
+  data_t iData = data[t*nsize];
   aux[i] = iData;
 % if argsort:
   index += offset;
   // Load block in AUY[WG]
-  idx_t iidx = index[i];
+  idx_t iidx = index[t*nsize];
   auy[i] = iidx;
 % endif
   barrier(CLK_LOCAL_MEM_FENCE); // make sure AUX is entirely up to date
@@ -493,9 +497,9 @@ __kernel void run\\
   }
 
   // Write output
-  data[i] = iData;
+  data[t*nsize] = iData;
 % if argsort:
-  index[i] = iidx;
+  index[t*nsize] = iidx;
 % endif
 }
 """

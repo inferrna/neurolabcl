@@ -437,18 +437,28 @@ __kernel void ParallelBitonic_A(__global const data_t * in)
 """
 
 ParallelBitonic_Local_Optim = """
-__kernel void run(__global data_t * data, __local data_t * aux)
+__kernel void run\\
+% if argsort:
+(__global data_t * data, __global idx_t * index, __local data_t * aux, __local idx_t * auy)
+% else:
+(__global data_t * data, __local data_t * aux)
+% endif
 {
   int i = get_local_id(0); // index in workgroup
   int wg = get_local_size(0); // workgroup size = block size, power of 2
 
   // Move IN, OUT to block start
   int offset = get_group_id(0) * wg;
-  data += offset;
-
+  data += offset; 
   // Load block in AUX[WG]
   data_t iData = data[i];
   aux[i] = iData;
+% if argsort:
+  index += offset;
+  // Load block in AUY[WG]
+  idx_t iidx = index[i];
+  auy[i] = iidx;
+% endif
   barrier(CLK_LOCAL_MEM_FENCE); // make sure AUX is entirely up to date
 
   // Loop on sorted sequence length
@@ -461,13 +471,22 @@ __kernel void run(__global data_t * data, __local data_t * aux)
         for (int pinc=length;pinc>0;pinc>>=1){
           int j = ii ^ pinc; // sibling to compare
           data_t jData = aux[loffset+j];
+% if argsort:
+          idx_t jidx = auy[loffset+j];
+% endif
           data_t iKey = getKey(iData);
           data_t jKey = getKey(jData);
           bool smaller = (jKey < iKey) || ( jKey == iKey && j < ii );
           bool swap = smaller ^ (ii>j) ^ direction;
           iData = (swap)?jData:iData; // update iData
+% if argsort:
+          iidx = (swap)?jidx:iidx; // update iidx
+% endif
           barrier(CLK_LOCAL_MEM_FENCE);
           aux[loffset+ii] = iData;
+% if argsort:
+          auy[loffset+ii] = iidx;
+% endif
           barrier(CLK_LOCAL_MEM_FENCE);
         }
       }
@@ -475,5 +494,8 @@ __kernel void run(__global data_t * data, __local data_t * aux)
 
   // Write output
   data[i] = iData;
+% if argsort:
+  index[i] = iidx;
+% endif
 }
 """

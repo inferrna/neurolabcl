@@ -34,7 +34,9 @@ kernels_srcs = {'B2': bitonic_templates.ParallelBitonic_B2,
                 'PML':bitonic_templates.ParallelMerge_Local}
 
 mwg = np.ctx.devices[0].max_work_group_size
-argsort = 0
+argsort = 1
+auxmem = np.cl.LocalMemory(mwg*4*4)
+auymem = np.cl.LocalMemory(mwg*4*4)
 
 def get_program(letter, params):
     if params in cached_progs[letter].keys():
@@ -93,9 +95,9 @@ def sort_b_prepare_wl(shape, axis=0):
     size = ds
     ndim = 1
     ns = 1
-    allowb4  = False 
-    allowb8  = False 
-    allowb16 = False 
+    allowb4  = True 
+    allowb8  = True 
+    allowb16 = True 
     length = 128
     prg = get_program('BLO', (1, 1, 'float', 'uint', ds, 1))
     run_queue.append((prg, size, (256,), True))
@@ -129,12 +131,12 @@ def sort_b_run(arr, rq, idx=None):
     p, nt, wg, aux = rq[0]
     if argsort:
         if aux:
-            p.run(np.queue, (nt,), wg, arr.data, idx.data, np.cl.LocalMemory(mwg*4*4), np.cl.LocalMemory(mwg*4*4))
+            p.run(np.queue, (nt,), wg, arr.data, idx.data, auxmem, auymem)
         for p, nt, wg,_ in rq[1:]:
             p.run(np.queue, (nt,), wg, arr.data, idx.data)
     else:
         if aux:
-            p.run(np.queue, (nt,), wg, arr.data, np.cl.LocalMemory(mwg*4*4))
+            p.run(np.queue, (nt,), wg, arr.data, auxmem)
         for p, nt, wg,_ in rq[1:]:
             p.run(np.queue, (nt,), wg, arr.data)
 
@@ -232,7 +234,7 @@ def sort_c4_run(arr, rqm, idx=None):
                 p.run(np.queue, (nt,), None, arr.data)
 
 #prg['pm'].run(np.queue, arr.shape, (256,), out.data, arr.data, np.cl.LocalMemory(mwg*4*4))
-rq = sort_b_prepare_wl(arr.shape, sa)
+rq = sort_b_prepare(arr.shape, sa)
 tsg = time.time()
 #prg = sort_bitonic_local_prepare(arr.shape)
 #prg['ls'].run(np.queue, arr.shape, (256,), arr.data, arr.data, np.np.int32(0), np.cl.LocalMemory(mwg*4*4))

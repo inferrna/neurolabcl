@@ -8,7 +8,7 @@ from math import log2
 
 #np.cl.Program(np.ctx, tplsrc).build()
 defstpl = Template(bitonic_templates.defines)
-sz = pow(2, 8)
+sz = pow(2, 20)
 arr = np.random.randn(sz) #.astype(np.np.float64)
 out = np.zeros(sz, dtype=arr.dtype)
 arrc = arr.get()
@@ -23,17 +23,18 @@ tec = time.time()
 indexes = np.arange(sz)
 
 cached_defs = {}
-cached_progs = {'B2':{}, 'B4':{}, 'B8':{}, 'B16':{}, 'C4':{}, 'BLO':{}, 'BL':{}}
+cached_progs = {'B2':{}, 'B4':{}, 'B8':{}, 'B16':{}, 'C4':{}, 'BLO':{}, 'BL':{}, 'PML':{}}
 kernels_srcs = {'B2': bitonic_templates.ParallelBitonic_B2,
                 'B4': bitonic_templates.ParallelBitonic_B4,
                 'B8': bitonic_templates.ParallelBitonic_B8,
                 'B16':bitonic_templates.ParallelBitonic_B16,
                 'C4': bitonic_templates.ParallelBitonic_C4,
                 'BL': bitonic_templates.ParallelBitonic_Local,
-                'BLO':bitonic_templates.ParallelBitonic_Local_Optim}
+                'BLO':bitonic_templates.ParallelBitonic_Local_Optim,
+                'PML':bitonic_templates.ParallelMerge_Local}
 
 mwg = np.ctx.devices[0].max_work_group_size
-argsort=1
+argsort = 0
 
 def get_program(letter, params):
     if params in cached_progs[letter].keys():
@@ -57,9 +58,9 @@ def sort_b_prepare(shape, axis):
     size = reduce(mul, shape)
     ndim = len(shape)
     ns = reduce(mul, shape[(axis+1):]) if axis<ndim-1 else 1
-    allowb4  = False 
-    allowb8  = False 
-    allowb16 = False 
+    allowb4  = True
+    allowb8  = True
+    allowb16 = True
     length = 1
     while length<ds:
         inc = length;
@@ -81,23 +82,69 @@ def sort_b_prepare(shape, axis):
             nThreads = size >> ninc;
             #print("dsize == {0}, nsize == {1}, nThreads == {2}".format(ds, ns, nThreads))
             prg = get_program(letter, (inc, direction, 'float', 'uint',  ds, ns))
-            run_queue.append((prg, nThreads,))
+            run_queue.append((prg, nThreads, None, False,))
+            inc >>= ninc;
+        length<<=1
+    return run_queue
+
+def sort_b_prepare_wl(shape, axis=0):
+    run_queue = []
+    ds = int(shape[0])
+    size = ds
+    ndim = 1
+    ns = 1
+    allowb4  = False 
+    allowb8  = False 
+    allowb16 = False 
+    length = 128
+    prg = get_program('BLO', (1, 1, 'float', 'uint', ds, 1))
+    run_queue.append((prg, size, (256,), True))
+    get_program('BLO', (1, 1, 'float', 'uint', ds, 1))
+    while length<ds:
+        inc = length;
+        while inc > 0:
+            ninc = 0;
+            direction = length<<1
+            if allowb16 and inc >= 8 and ninc == 0:
+                letter = 'B16'
+                ninc = 4;
+            elif allowb8 and inc >= 4 and ninc == 0:
+                letter = 'B8'
+                ninc = 3;
+            elif allowb4 and inc >= 2 and ninc == 0:
+                letter = 'B4'
+                ninc = 2;
+            elif inc >= 0:
+                letter = 'B2'
+                ninc = 1;
+            nThreads = size >> ninc;
+            #print("dsize == {0}, nsize == {1}, nThreads == {2}".format(ds, ns, nThreads))
+            prg = get_program(letter, (inc, direction, 'float', 'uint',  ds, ns))
+            run_queue.append((prg, nThreads, None, False,))
             inc >>= ninc;
         length<<=1
     return run_queue
 
 def sort_b_run(arr, rq, idx=None):
+    p, nt, wg, aux = rq[0]
     if argsort:
-        for p, nt in rq:
-            p.run(np.queue, (nt,), None, arr.data, idx.data)
+        if aux:
+            p.run(np.queue, (nt,), wg, arr.data, idx.data, np.cl.LocalMemory(mwg*4*4), np.cl.LocalMemory(mwg*4*4))
+        for p, nt, wg,_ in rq[1:]:
+            p.run(np.queue, (nt,), wg, arr.data, idx.data)
     else:
-        for p, nt in rq:
-            p.run(np.queue, (nt,), None, arr.data)
+        if aux:
+            p.run(np.queue, (nt,), wg, arr.data, np.cl.LocalMemory(mwg*4*4))
+        for p, nt, wg,_ in rq[1:]:
+            p.run(np.queue, (nt,), wg, arr.data)
 
 
 def sort_bitonic_local_prepare(shape):
     ds = shape[0]
-    return get_program('BL', (1, 1, 'float', 'uint', ds, 1))
+    res = {}
+    res['ls'] = get_program('BLO', (1, 1, 'float', 'uint', ds, 1))
+    res['pm'] = get_program('PML', (1, 1, 'float', 'uint', ds, 1))
+    return res
 
 
 def sort_c4_prepare(shape, axis):
@@ -184,17 +231,18 @@ def sort_c4_run(arr, rqm, idx=None):
             else:                      
                 p.run(np.queue, (nt,), None, arr.data)
 
-prg = sort_bitonic_local_prepare(arr.shape)
-prg.run(np.queue, arr.shape, None, arr.data, out.data, np.cl.LocalMemory(mwg*4*4))
-#rq = sort_b_prepare(arr.shape, sa)
-#tsg = time.time()
-#if argsort:
-#    sort_b_run(arr, rq, indexes)
-#else:
-#    sort_b_run(arr, rq)
-#teg = time.time()
+#prg['pm'].run(np.queue, arr.shape, (256,), out.data, arr.data, np.cl.LocalMemory(mwg*4*4))
+rq = sort_b_prepare_wl(arr.shape, sa)
+tsg = time.time()
+#prg = sort_bitonic_local_prepare(arr.shape)
+#prg['ls'].run(np.queue, arr.shape, (256,), arr.data, arr.data, np.np.int32(0), np.cl.LocalMemory(mwg*4*4))
+if argsort:
+    sort_b_run(arr, rq, indexes)
+else:
+    sort_b_run(arr, rq)
+teg = time.time()
 
-#print("Sorting {0} samples. Got {1} sec on CPU and {2} sec on GPU".format(sz, tec - tsc, teg - tsg))
+print("Sorting {0} samples. Got {1} sec on CPU and {2} sec on GPU".format(sz, tec - tsc, teg - tsg))
 
 #singleprogram.ParallelBitonic_C4(np.queue, (arr.size,), None, arr.data, np.np.int32(32), np.np.int32(0), localmem)
 #singleprogram.ParallelMerge_Local(np.queue, (arr.size,), None, arr.data, out.data, localmem)

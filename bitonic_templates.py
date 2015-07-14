@@ -351,16 +351,16 @@ __kernel void run(__global const data_t * in,__global data_t * out,__local data_
   for (int length=1;length<wg;length<<=1)
   {
     data_t iData = aux[i];
-    uint iKey = getKey(iData);
+    data_t iKey = getKey(iData);
     int ii = i & (length-1);  // index in our sequence in 0..length-1
     int sibling = (i - ii) ^ length; // beginning of the sibling sequence
     int pos = 0;
-    for (int inc=length;inc>0;inc>>=1) // increment for dichotomic search
+    for (int pinc=length;pinc>0;pinc>>=1) // increment for dichotomic search
     {
-      int j = sibling+pos+inc-1;
-      uint jKey = getKey(aux[j]);
+      int j = sibling+pos+pinc-1;
+      data_t jKey = getKey(aux[j]);
       bool smaller = (jKey < iKey) || ( jKey == iKey && j < i );
-      pos += (smaller)?inc:0;
+      pos += (smaller)?pinc:0;
       pos = min(pos,length);
     }
     int bits = 2*length-1; // mask for destination
@@ -397,7 +397,7 @@ __kernel void run(__global const data_t * in,__global data_t * out,__local data_
     // Loop on comparison distance (between keys)
     for (int pinc=length;pinc>0;pinc>>=1)
     {
-      int j = i ^ pinc; // sibling to compare
+      int j = i + pinc; // sibling to compare
       data_t iData = aux[i];
       uint iKey = getKey(iData);
       data_t jData = aux[j];
@@ -415,42 +415,65 @@ __kernel void run(__global const data_t * in,__global data_t * out,__local data_
 }
 """
 
+ParallelBitonic_A = """
+__kernel void ParallelBitonic_A(__global const data_t * in)
+{
+  int i = get_global_id(0); // thread index
+  int j = i ^ inc; // sibling to compare
+
+  // Load values at I and J
+  data_t iData = in[i];
+  uint iKey = getKey(iData);
+  data_t jData = in[j];
+  uint jKey = getKey(jData);
+
+  // Compare
+  bool smaller = (jKey < iKey) || ( jKey == iKey && j < i );
+  bool swap = smaller ^ (j < i) ^ ((dir & i) != 0);
+
+  // Store
+  in[i] = (swap)?jData:iData;
+}
+"""
+
 ParallelBitonic_Local_Optim = """
-__kernel void run(__global const data_t * in,__global data_t * out,__local data_t * aux)
+__kernel void run(__global data_t * data, __local data_t * aux)
 {
   int i = get_local_id(0); // index in workgroup
   int wg = get_local_size(0); // workgroup size = block size, power of 2
 
   // Move IN, OUT to block start
   int offset = get_group_id(0) * wg;
-  in += offset; out += offset;
+  data += offset;
 
   // Load block in AUX[WG]
-  data_t iData = in[i];
+  data_t iData = data[i];
   aux[i] = iData;
   barrier(CLK_LOCAL_MEM_FENCE); // make sure AUX is entirely up to date
 
   // Loop on sorted sequence length
-  for (int length=1;length<wg;length<<=1)
-  {
-    bool direction = ((i & (length<<1)) != 0); // direction of sort: 0=asc, 1=desc
-    // Loop on comparison distance (between keys)
-    for (int pinc=length;pinc>0;pinc>>=1)
-    {
-      int j = i ^ pinc; // sibling to compare
-      data_t jData = aux[j];
-      uint iKey = getKey(iData);
-      uint jKey = getKey(jData);
-      bool smaller = (jKey < iKey) || ( jKey == iKey && j < i );
-      bool swap = smaller ^ (j < i) ^ direction;
-      iData = (swap)?jData:iData; // update iData
-      barrier(CLK_LOCAL_MEM_FENCE);
-      aux[i] = iData;
-      barrier(CLK_LOCAL_MEM_FENCE);
-    }
+  for (int pwg=1;pwg<=wg;pwg<<=1){
+      int loffset = pwg*(i/pwg);
+      int ii = i%pwg;
+      for (int length=1;length<pwg;length<<=1){
+        bool direction = ii & (length<<1); // direction of sort: 0=asc, 1=desc
+        // Loop on comparison distance (between keys)
+        for (int pinc=length;pinc>0;pinc>>=1){
+          int j = ii ^ pinc; // sibling to compare
+          data_t jData = aux[loffset+j];
+          data_t iKey = getKey(iData);
+          data_t jKey = getKey(jData);
+          bool smaller = (jKey < iKey) || ( jKey == iKey && j < ii );
+          bool swap = smaller ^ (ii>j) ^ direction;
+          iData = (swap)?jData:iData; // update iData
+          barrier(CLK_LOCAL_MEM_FENCE);
+          aux[loffset+ii] = iData;
+          barrier(CLK_LOCAL_MEM_FENCE);
+        }
+      }
   }
 
   // Write output
-  out[i] = iData;
+  data[i] = iData;
 }
 """

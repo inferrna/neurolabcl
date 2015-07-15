@@ -8,8 +8,8 @@ from math import log2
 
 #np.cl.Program(np.ctx, tplsrc).build()
 defstpl = Template(bitonic_templates.defines)
-sz = pow(2, 12)
-gshape = (3, sz, 5,)
+sz = pow(2, 8)
+gshape = (13, sz, 20)
 arr = np.random.randn(*gshape) #.astype(np.np.float64)
 out = np.zeros(gshape, dtype=arr.dtype)
 arrc = arr.get()
@@ -99,10 +99,11 @@ def sort_b_prepare_wl(shape, axis=0):
     ds = int(shape[axis])
     allowb4  = True 
     allowb8  = True 
-    allowb16 = True 
-    length = 128
+    allowb16 = True
+    wg = min(ds, mwg)
+    length = wg>>1
     prg = get_program('BLO', (1, 1, 'float', 'uint', ds, ns))
-    run_queue.append((prg, size, (256,), True))
+    run_queue.append((prg, size, (wg,), True))
     get_program('BLO', (1, 1, 'float', 'uint', ds, 1))
     while length<ds:
         inc = length;
@@ -133,23 +134,14 @@ def sort_b_run(arr, rq, idx=None):
     p, nt, wg, aux = rq[0]
     if argsort:
         if aux:
-            p.run(np.queue, (nt,), wg, arr.data, idx.data, auxmem, auymem)
+            p.run(np.queue, (nt,), wg, arr.data, idx.data, np.cl.LocalMemory(wg[0]*4*4), np.cl.LocalMemory(wg[0]*4*arr.dtype.itemsize))
         for p, nt, wg,_ in rq[1:]:
             p.run(np.queue, (nt,), wg, arr.data, idx.data)
     else:
         if aux:
-            p.run(np.queue, (nt,), wg, arr.data, auxmem)
+            p.run(np.queue, (nt,), wg, arr.data, np.cl.LocalMemory(wg[0]*4*arr.dtype.itemsize))
         for p, nt, wg,_ in rq[1:]:
             p.run(np.queue, (nt,), wg, arr.data)
-
-
-def sort_bitonic_local_prepare(shape):
-    ds = shape[0]
-    res = {}
-    res['ls'] = get_program('BLO', (1, 1, 'float', 'uint', ds, 1))
-    res['pm'] = get_program('PML', (1, 1, 'float', 'uint', ds, 1))
-    return res
-
 
 def sort_c4_prepare(shape, axis):
     run_queue = []
@@ -166,7 +158,7 @@ def sort_c4_prepare(shape, axis):
         strategy = []
         ii = inc
         while ii > 0:
-            if ii in [128, 32, 8]:
+            if ii in [256, 128, 32, 8]:
                 strategy.append(-1)
                 break
             d = 1
@@ -225,21 +217,18 @@ def sort_c4_run(arr, rqm, idx=None):
     if argsort:
         for p, nt, dl in rq:
             if dl:
-                p.run(np.queue, (nt,), None, arr.data, idx.data, lx, ly)
-            else:                      
-                p.run(np.queue, (nt,), None, arr.data, idx.data)
+                p.run(np.queue, (nt,), (512,), arr.data, idx.data, lx, ly)
+            else:                   
+                p.run(np.queue, (nt,), (512,), arr.data, idx.data)
     else:
         for p, nt, dl in rq:
             if dl:
-                p.run(np.queue, (nt,), None, arr.data, lx)
-            else:                      
-                p.run(np.queue, (nt,), None, arr.data)
+                p.run(np.queue, (nt,), (512,), arr.data, lx)
+            else:                  
+                p.run(np.queue, (nt,), (512,), arr.data)
 
-#prg['pm'].run(np.queue, arr.shape, (256,), out.data, arr.data, np.cl.LocalMemory(mwg*4*4))
-rq = sort_b_prepare(arr.shape, sa)
+rq = sort_b_prepare_wl(arr.shape, sa)
 tsg = time.time()
-#prg = sort_bitonic_local_prepare(arr.shape)
-#prg['ls'].run(np.queue, arr.shape, (256,), arr.data, arr.data, np.np.int32(0), np.cl.LocalMemory(mwg*4*4))
 if argsort:
     sort_b_run(arr, rq, indexes)
 else:

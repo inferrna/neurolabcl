@@ -78,12 +78,7 @@ class programs():
         if not key in programcache.keys():
             dtype, ndim = args
             nds = ndim-1
-            findpsrcl = [clsrc.findposnorecsrc.format("", "", min(1, nds), nds)]+\
-                        [clsrc.findposnorecsrc.format(a, "", a+1, nds-a) for a in range(1, nds)]+\
-                        [clsrc.findposnorecsrc.format(nds, "//", 0, 0)]
-            findpsrcl.reverse()
-            findpsrc = "\n".join(findpsrcl).replace("<%", "{").replace("%>", "}")+"\n"
-            ksource = clsrc.slicedefs.format(typemaps[dtype.name], 0, ndim) + findpsrc + clsrc.transpsrc
+            ksource = clsrc.slicedefs.format(typemaps[dtype.name], 0, ndim) + clsrc.transpsrc
             programcache[key] = cl.Program(self.ctx, ksource).build()
         return programcache[key]
 

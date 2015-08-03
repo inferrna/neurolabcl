@@ -223,16 +223,21 @@ transpsrc = """
 __kernel void mitransp(__global uint *olddims, __global uint *replaces,
                        __global dtype *data, __global dtype *result){
     uint gid = get_global_id(0);
+    uint newgid = gid;
     uint lid = get_local_id(0);
     uint wid = get_group_id(0);
-    uint i,j;
+    int i,j;
     uint currposs[PC];
     uint newposs[PC];
     uint newdims[PC];
     uint newid = 0;
     uint scales[PC];
 
-    findpos(gid, olddims, currposs, PC-1);
+    //findpos(gid, olddims, currposs, PC-1);
+    for(i = PC-1; i>=0; i--){
+        currposs[i] = newgid % olddims[i]; //same as currpos
+        newgid = newgid/olddims[i];
+    }
     for(i=0; i<PC; i++){ //i as current dim
         j = replaces[i];
         newposs[i] = currposs[j];

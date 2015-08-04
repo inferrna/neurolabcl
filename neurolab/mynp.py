@@ -289,12 +289,8 @@ class myclArray(clarray.Array):
         replaces = np.array(args, dtype=np.uint32)
         olddims = np.array(self.shape, dtype=np.uint32)
         result = empty(tuple(olddims[replaces]), self.dtype)
-        clolddims = myBuffer(ctx, mf.READ_ONLY| mf.COPY_HOST_PTR, hostbuf=olddims)
-        clreplaces = myBuffer(ctx, mf.READ_ONLY| mf.COPY_HOST_PTR, hostbuf=replaces)
-        program = programs.transpose(self.dtype, self.ndim)
-        program.mitransp(queue, (self.size,), None, clolddims, clreplaces, self.data, result.data)
-        clreplaces.release()
-        clolddims.release()
+        program = programs.transpose(self.dtype, self.shape, args)
+        program.mitransp(queue, (self.size,), None, self.data, result.data)
         return result
 
     @property 

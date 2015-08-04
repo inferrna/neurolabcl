@@ -76,9 +76,14 @@ class programs():
     def transpose(self, *args):
         key = args+('transpose',)
         if not key in programcache.keys():
-            dtype, ndim = args
-            nds = ndim-1
-            ksource = clsrc.slicedefs.format(typemaps[dtype.name], 0, ndim) + clsrc.transpsrc
+            dtype, shape, repls = args
+            ndim = len(shape)
+            scales = [0]*ndim
+            scales[ndim-1] = 1
+            for i in range(ndim-1, 0, -1):
+                scales[i-1] = scales[i]*shape[repls[i]]
+            ksourcetpl = Template(clsrc.slicedefs.format(typemaps[dtype.name], 0, ndim) + clsrc.transpsrc)
+            ksource = ksourcetpl.render(scales=scales, replaces=repls, olddims=shape, ndim=ndim)
             programcache[key] = cl.Program(self.ctx, ksource).build()
         return programcache[key]
 

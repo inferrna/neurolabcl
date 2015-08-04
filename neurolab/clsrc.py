@@ -220,36 +220,27 @@ void findpos(uint id, __global uint *olddims, uint *currposs, uint c){
 
 transpsrc = """
 
-__kernel void mitransp(__global uint *olddims, __global uint *replaces,
-                       __global dtype *data, __global dtype *result){
+__kernel void mitransp(__global dtype *data, __global dtype *result){
     uint gid = get_global_id(0);
     uint newgid = gid;
     uint lid = get_local_id(0);
     uint wid = get_group_id(0);
     int i,j;
-    uint currposs[PC];
-    uint newposs[PC];
-    uint newdims[PC];
+    uint currposs[${ndim}];
+    uint newposs[${ndim}];
     uint newid = 0;
-    uint scales[PC];
 
-    //findpos(gid, olddims, currposs, PC-1);
-    for(i = PC-1; i>=0; i--){
-        currposs[i] = newgid % olddims[i]; //same as currpos
-        newgid = newgid/olddims[i];
-    }
-    for(i=0; i<PC; i++){ //i as current dim
-        j = replaces[i];
-        newposs[i] = currposs[j];
-        newdims[i] = olddims[j];
-    }
-    scales[PC-1] = 1;
-    for(i=PC-1; i>0; i--){ //i as current dim
-        scales[i-1] = scales[i]*newdims[i];
-    }
-    for(i=0; i<PC; i++){ //i as current dim
-        newid += scales[i]*newposs[i];
-    }
+% for i in range(ndim-1, -1, -1):
+    currposs[${i}] = newgid % ${olddims[i]}; //same as currpos
+    newgid = newgid/${olddims[i]};
+% endfor
+% for i in range(0, ndim):
+    <% j = replaces[i] %>
+    newposs[${i}] = currposs[${j}];
+% endfor
+% for i in range(0, ndim):
+    newid += ${scales[i]}*newposs[${i}];
+% endfor
     result[newid] = data[gid];
 }
 """

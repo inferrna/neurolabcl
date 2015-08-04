@@ -84,6 +84,7 @@ class programs():
                 scales[i-1] = scales[i]*shape[repls[i]]
             ksourcetpl = Template(clsrc.slicedefs.format(typemaps[dtype.name], 0, ndim) + clsrc.transpsrc)
             ksource = ksourcetpl.render(scales=scales, replaces=repls, olddims=shape, ndim=ndim)
+            print(ksource)
             programcache[key] = cl.Program(self.ctx, ksource).build()
         return programcache[key]
 

@@ -9,7 +9,7 @@ s = 10
 
 data = np.load('/tmp/data.txt.npy')
 res = np.load('/tmp/res.txt.npy')
-nn=nt.create([data[0].size, data[0].size//2, data[0].size//3, 1])
+nn=nt.create([data[0].size, data[0].size//2, data[0].size//3, res[0].size])
 
 xTrain = data[:-s]
 yTrain = res[:-s]

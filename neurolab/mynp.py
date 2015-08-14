@@ -750,15 +750,15 @@ def zeros_like(a, dtype=None, order='K', subok=True):
 
 #@chkfunc
 def argmin(a):
-    return argsort(a)[0]
+    return int(argsort(a)[0].get())
 #@chkfunc
 def argmax(a):
-    return argsort(a)[-1]
+    return int(argsort(a)[-1].get())
 #@chkfunc
-def argsort(a):
+def argsort(a, idx=None):
     ac = a.copy()
     dt = np.uint64 if a.size>4294967295 else np.uint32 if a.size>65535 else np.uint16
-    rc = get_arng(a.size, dtype=dt)
+    rc = get_arng(a.size, dtype=dt) if idx is None else idx
     bs(ac, idx=rc)
     return rc
 

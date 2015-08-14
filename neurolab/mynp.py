@@ -345,7 +345,7 @@ class myclArray(clarray.Array):
         elif isinstance(_value, myclArray) and type(subscript) == int and self.shape[-_value.ndim:] == _value.shape:
             count = int(np.prod(self.shape[-_value.ndim:]))
             programs.singleset(self.dtype)\
-                    .prg(queue, (count,), None, self.data, _value.base_data, np.int32(0), global_offset=(count*subscript,))
+                    .prg(queue, (count,), None, self.data, _value.base_data, np.int32(0), np.int32(count*subscript))
         else:
             try:
                 clarray.Array.setitem(self, subscript, _value, queue=queue)

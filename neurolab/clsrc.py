@@ -275,11 +275,10 @@ __kernel void misum(__global dtype *data, __global dtype *result){
 }
 """
 singlesetsrc = """
-__kernel void prg(__global dtype *data, __global dtype *_source, uint srcoffset){
+__kernel void prg(__global dtype *data, __global dtype *_source, uint srcoffset, uint goff){
     uint gid = get_global_id(0);
-    uint goff = get_global_offset(0);
     __global dtype *source = _source+srcoffset;
-    data[gid] = source[gid-goff];
+    data[gid+goff] = source[gid];
 }
 """
 singlesrc = """

@@ -3,6 +3,7 @@ import pyopencl as cl
 from pyopencl import clrandom, clmath
 from pyopencl import array as clarray
 from pyopencl import algorithm
+from pyopencl import bitonic_sort
 import clsrc
 import clprograms
 from checker import justtime,  chkvoidmethod, chkmethod, chkfunc, backtonp_voidmethod, backtonp_method, backtonp_func
@@ -10,6 +11,7 @@ from builtins import sum as bsum
 
 ctx = cl.create_some_context()
 queue = cl.CommandQueue(ctx)
+bs = bitonic_sort.BitonicSort(ctx)
 programs = clprograms.programs(ctx)
 align = queue.device.get_info(cl.device_info.MEM_BASE_ADDR_ALIGN)
 print("align is", align)
@@ -139,7 +141,6 @@ class myclArray(clarray.Array):
         self.reinit()
 
     def reinit(self):
-        self.ndim = len(self.shape)
 #TODO rewrite inner operators to support boolean array as parameter
 #https://docs.python.org/3/library/operator.html
         self.is_boolean = False
@@ -354,14 +355,6 @@ class myclArray(clarray.Array):
                 assert False==True, "Can not set array {0} by value {1} on [psition {2}".format(self, _value, subscript)
         #return self
 
-
-    def copy(self):
-        res = empty(self.shape, self.dtype)
-        programs.singleset(self.dtype)\
-                .prg(queue, (res.size,), None, res.data, self.base_data, np.int32(self.offset//self.dtype.itemsize), global_offset=(0,))
-        return res
-
-        
 
     @chkmethod
     def max(*args, **kwargs):
@@ -763,15 +756,11 @@ def argmax(a):
     return argsort(a)[-1]
 #@chkfunc
 def argsort(a):
-    return arr_from_np(np.argsort(a))
-    #arng = get_arng(a.size, np.int32)#clarray.arange(queue, 0, a.size, 1, dtype=np.int32)
-    #prg = programs.argsort(a.dtype)
-    #res = prg(a, arng, key_bits=a.dtype.itemsize*8)[0][1]
-    #if not isinstance(res, myclArray):
-    #    res.__class__ = myclArray
-    #    res.reinit()
-    ##print(ret)
-    #return res
+    ac = a.copy()
+    dt = np.uint64 if a.size>4294967295 else np.uint32 if a.size>65535 else np.uint16
+    rc = get_arng(a.size, dtype=dt)
+    bs(ac, idx=rc)
+    return rc
 
 
 @chkfunc

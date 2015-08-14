@@ -758,6 +758,8 @@ def argsort(a, idx=None):
     dt = np.uint64 if a.size>4294967295 else np.uint32 if a.size>65535 else np.uint16
     rc = get_arng(a.size, dtype=dt) if idx is None else idx
     bs(ac, idx=rc)
+    rc.__class__ = myclArray
+    rc.reinit()
     return rc
 
 

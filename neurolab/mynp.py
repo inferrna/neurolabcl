@@ -270,14 +270,12 @@ class myclArray(clarray.Array):
             program = programs.sliceget(self.dtype, len(self.shape))
             res = empty(newshape, self.dtype)
             program.mislice(queue, (res.size,), None, indices.data, self.data, res.data)
-            return res
         elif isinstance(index, myclArray) and self.ndim>0:
             program = programs.getndbyids(self.dtype, index.dtype)
             resshape = (index.size,) + self.shape[1:] if index.size>1 else self.shape[1:]
             dims = (int(np.prod(self.shape[1:])), int(index.size),)
             res = empty(resshape, self.dtype)
             program.getbyids(queue, dims, None, index.data, self.data, res.data)
-            return res
         else:
             res = clarray.Array.__getitem__(self, index)
         if not isinstance(res, myclArray):

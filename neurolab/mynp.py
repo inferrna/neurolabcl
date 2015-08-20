@@ -332,9 +332,10 @@ class myclArray(clarray.Array):
             assert newshape[-value.ndim:] == value.shape or value.size == newsize or value.size == 1,\
                                      "Size of value array {0} does not match size of result indices {1}"\
                                                                  .format(value.shape, newshape)
-            if value.size == newsize: 
+            if value.size == newsize:
                 programs.sliceset(self.dtype, self.ndim, 1)\
-                        .mislice(queue, (newsize,), None, indices.data, self.data, value.data)
+                        .mislice(queue, (newsize,), None, indices.data, self.base_data, value.base_data,\
+                                 np.uint32(self.offset//self.dtype.itemsize), np.uint32(value.offset//value.dtype.itemsize))
             elif value.size == 1:
                 programs.sliceset(self.dtype, self.ndim, 1)\
                         .mislicesingle(queue, (newsize,), None, indices.data, self.data, value.data, np.int32(0))

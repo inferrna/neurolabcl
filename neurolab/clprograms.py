@@ -40,9 +40,11 @@ class programs():
     def sliceset(self, *args):
         key = args+('sliceset',)
         if not key in programcache.keys():
-            dtype, ndim, cs = args          # cs as chunk size. Usual size of value if it shape may be fitted into source shapes
+            dtype, ndim, cs, noidx = args          # cs as chunk size. Usual size of value if it shape may be fitted into source shapes
             nds = ndim-1
-            if nds>0:
+            if noidx:
+                slicesrcl = ''
+            elif nds>0:
                 slicesrcl = [clsrc.norecslicesrc.format("", "", min(1, nds), nds)]+\
                             [clsrc.norecslicesrc.format(a, "", a+1, nds-a) for a in range(1, nds)]+\
                             [clsrc.norecslicesrc.format(nds, "//", 0, 0)]
@@ -52,16 +54,18 @@ class programs():
             slicesrc = "\n".join(slicesrcl).replace("<%", "{").replace("%>", "}")+"\n"
             ksource = clsrc.slicedefs.format(typemaps[dtype.name], 0, ndim)\
                                             + slicesrc\
-                                            + Template(clsrc.slicesetsrc).render(cs=cs)
+                                            + Template(clsrc.slicesetsrc).render(cs=cs, noidx=noidx)
             programcache[key] = cl.Program(self.ctx, ksource).build()
         return programcache[key]
 
     def sliceget(self, *args):
         key = args+('sliceget',)
         if not key in programcache.keys():
-            dtype, ndim = args
+            dtype, ndim, noidx = args
             nds = ndim-1
-            if nds>0:
+            if noidx:
+                slicesrcl = ''
+            elif nds>0:
                 slicesrcl = [clsrc.norecslicesrc.format("", "", min(1, nds), nds)]+\
                             [clsrc.norecslicesrc.format(a, "", a+1, nds-a) for a in range(1, nds)]+\
                             [clsrc.norecslicesrc.format(nds, "//", 0, 0)]
@@ -69,7 +73,7 @@ class programs():
             else:
                 slicesrcl = [clsrc.norecslicesrc.format("", "//", 0, nds)]
             slicesrc = "\n".join(slicesrcl).replace("<%", "{").replace("%>", "}")+"\n"
-            ksource = clsrc.slicedefs.format(typemaps[dtype.name], 0, ndim) + slicesrc + clsrc.slicegetsrc
+            ksource = clsrc.slicedefs.format(typemaps[dtype.name], 0, ndim) + slicesrc + Template(clsrc.slicegetsrc).render(noidx=noidx)
             programcache[key] = cl.Program(self.ctx, ksource).build()
         return programcache[key]
 

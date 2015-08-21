@@ -231,6 +231,8 @@ class myclArray(clarray.Array):
         return self.get().tolist(*args, **kwargs)
 
     def createshapes(self, index):
+        if not index.start and not index.stop and not index.step:
+            return None, self.shape
         if isinstance(index, slice):
             index = (index,)
         def getslice(_x, a):
@@ -254,7 +256,7 @@ class myclArray(clarray.Array):
         newshape = tuple([a for a, b, i in zip(newshape, self.shape, index) if not isinstance(i, int)])
         if newshape == (): newshape = (1,)
         indices = arr_from_np(npindices)
-        return indices, newshape
+        return indices.data, newshape
 
 
     @chkmethod
@@ -267,7 +269,7 @@ class myclArray(clarray.Array):
             res = x[:y.get()]
         elif isinstance(index, tuple) or isinstance(index, slice):
             indices, newshape = self.createshapes(index)
-            program = programs.sliceget(self.dtype, len(self.shape))
+            program = programs.sliceget(self.dtype, len(self.shape), indices is None)
             res = empty(newshape, self.dtype)
             program.mislice(queue, (res.size,), None, indices.data, self.data, res.data)
         elif isinstance(index, myclArray) and self.ndim>0:
@@ -333,16 +335,16 @@ class myclArray(clarray.Array):
                                      "Size of value array {0} does not match size of result indices {1}"\
                                                                  .format(value.shape, newshape)
             if value.size == newsize:
-                programs.sliceset(self.dtype, self.ndim, 1)\
-                        .mislice(queue, (newsize,), None, indices.data, self.base_data, value.base_data,\
+                programs.sliceset(self.dtype, self.ndim, 1, indices is None)\
+                        .mislice(queue, (newsize,), None, indices, self.base_data, value.base_data,\
                                  np.uint32(self.offset//self.dtype.itemsize), np.uint32(value.offset//value.dtype.itemsize))
             elif value.size == 1:
-                programs.sliceset(self.dtype, self.ndim, 1)\
-                        .mislicesingle(queue, (newsize,), None, indices.data, self.data, value.data, np.int32(0))
+                programs.sliceset(self.dtype, self.ndim, 1, indices is None)\
+                        .mislicesingle(queue, (newsize,), None, indices, self.data, value.data, np.int32(0))
             elif newshape[-value.ndim:] == value.shape:
                 sizes = (int(np.prod(newshape[:-value.ndim])), int(np.prod(value.shape)),)
-                programs.sliceset(self.dtype, self.ndim - value.ndim, sizes[-1])\
-                        .mislicesingle(queue, sizes, None, indices.data, self.data, value.base_data, np.int32(value.offset))
+                programs.sliceset(self.dtype, self.ndim - value.ndim, sizes[-1], indices is None)\
+                        .mislicesingle(queue, sizes, None, indices, self.data, value.base_data, np.int32(value.offset))
         elif isinstance(_value, myclArray) and type(subscript) == int and self.shape[-_value.ndim:] == _value.shape:
             count = int(np.prod(self.shape[-_value.ndim:]))
             programs.singleset(self.dtype)\

@@ -47,13 +47,21 @@ uint slice(uint id, __global int4 *params, const uint c){
 slicegetsrc = """
 __kernel void mislice(__global int4 *params, __global dtype *data, __global dtype *result){
     uint gid = get_global_id(0);
+% if noidx:
+    result[gid] = data[gid];
+% else:
     result[gid] = data[slice(gid, params, PC-1)];
+% endif
 }
 """
 slicesetsrc = """
 __kernel void mislice(__global int4 *params, __global dtype *data, __global dtype *source, uint data_offset, uint srcoffset){
     uint gid = get_global_id(0);
+% if noidx:
+    data[gid+data_offset] = source[gid + srcoffset];
+% else:
     data[slice(gid, params, PC-1)+data_offset] = source[gid + srcoffset];
+% endif
 }
 __kernel void mislicesingle(__global int4 *params, __global dtype *data, __global dtype *_source, uint srcoffset){
     uint gid = get_global_id(0);
@@ -66,7 +74,11 @@ __kernel void mislicesingle(__global int4 *params, __global dtype *data, __globa
         }
     }
     barrier(CLK_LOCAL_MEM_FENCE);
+% if noidx:
+    data[gid*${cs}+gid1] = value[gid1];
+% else:
     data[slice(gid, params, PC-1)*${cs}+gid1] = value[gid1];
+% endif
 }
 """
 

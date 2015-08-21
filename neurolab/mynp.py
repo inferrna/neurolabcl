@@ -271,7 +271,7 @@ class myclArray(clarray.Array):
             indices, newshape = self.createshapes(index)
             program = programs.sliceget(self.dtype, len(self.shape), indices is None)
             res = empty(newshape, self.dtype)
-            program.mislice(queue, (res.size,), None, indices.data, self.data, res.data)
+            program.mislice(queue, (res.size,), None, indices, self.data, res.data)
         elif isinstance(index, myclArray) and self.ndim>0:
             program = programs.getndbyids(self.dtype, index.dtype)
             resshape = (index.size,) + self.shape[1:] if index.size>1 else self.shape[1:]

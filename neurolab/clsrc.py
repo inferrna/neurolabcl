@@ -45,7 +45,11 @@ uint slice(uint id, __global int4 *params, const uint c){
 }
 """
 slicegetsrc = """
+% if noidx:
+__kernel void mislice(int dummy, __global dtype *data, __global dtype *result){
+% else:
 __kernel void mislice(__global int4 *params, __global dtype *data, __global dtype *result){
+% endif
     uint gid = get_global_id(0);
 % if noidx:
     result[gid] = data[gid];
@@ -55,7 +59,11 @@ __kernel void mislice(__global int4 *params, __global dtype *data, __global dtyp
 }
 """
 slicesetsrc = """
+% if noidx:
+__kernel void mislice(int dummy, __global dtype *data, __global dtype *source, uint data_offset, uint srcoffset){
+% else:
 __kernel void mislice(__global int4 *params, __global dtype *data, __global dtype *source, uint data_offset, uint srcoffset){
+% endif
     uint gid = get_global_id(0);
 % if noidx:
     data[gid+data_offset] = source[gid + srcoffset];
@@ -63,7 +71,11 @@ __kernel void mislice(__global int4 *params, __global dtype *data, __global dtyp
     data[slice(gid, params, PC-1)+data_offset] = source[gid + srcoffset];
 % endif
 }
+% if noidx:
+__kernel void mislicesingle(int dummy, __global dtype *data, __global dtype *_source, uint srcoffset){
+% else:
 __kernel void mislicesingle(__global int4 *params, __global dtype *data, __global dtype *_source, uint srcoffset){
+% endif
     uint gid = get_global_id(0);
     uint gid1 = get_global_id(1);
     __global dtype *source = _source + srcoffset;

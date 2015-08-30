@@ -271,7 +271,7 @@ class myclArray(clarray.Array):
             indices, newshape = self.createshapes(index)
             program = programs.sliceget(self.dtype, len(self.shape), indices is None)
             res = empty(newshape, self.dtype)
-            program.mislice(queue, (res.size,), None, indices.data if indices else None, self.data, res.data)
+            program.mislice(queue, (res.size,), None, indices.data if indices else np.int32(0), self.data, res.data)
         elif isinstance(index, myclArray) and self.ndim>0:
             program = programs.getndbyids(self.dtype, index.dtype)
             resshape = (index.size,) + self.shape[1:] if index.size>1 else self.shape[1:]
@@ -336,15 +336,15 @@ class myclArray(clarray.Array):
                                                                  .format(value.shape, newshape)
             if value.size == newsize:
                 programs.sliceset(self.dtype, self.ndim, 1, indices is None)\
-                        .mislice(queue, (newsize,), None, indices.data if indices else None, self.base_data, value.base_data,\
+                        .mislice(queue, (newsize,), None, indices.data if indices else np.int32(0), self.base_data, value.base_data,\
                                  np.uint32(self.offset//self.dtype.itemsize), np.uint32(value.offset//value.dtype.itemsize))
             elif value.size == 1:
                 programs.sliceset(self.dtype, self.ndim, 1, indices is None)\
-                        .mislicesingle(queue, (newsize,), None, indices.data if indices else None, self.data, value.data, np.int32(0))
+                        .mislicesingle(queue, (newsize,), None, indices.data if indices else np.int32(0), self.data, value.data, np.int32(0))
             elif newshape[-value.ndim:] == value.shape:
                 sizes = (int(np.prod(newshape[:-value.ndim])), int(np.prod(value.shape)),)
                 programs.sliceset(self.dtype, self.ndim - value.ndim, sizes[-1], indices is None)\
-                        .mislicesingle(queue, sizes, None, indices.data if indices else None, self.data, value.base_data, np.int32(value.offset))
+                        .mislicesingle(queue, sizes, None, indices.data if indices else np.int32(0), self.data, value.base_data, np.int32(value.offset))
         elif isinstance(_value, myclArray) and type(subscript) == int and self.shape[-_value.ndim:] == _value.shape:
             count = int(np.prod(self.shape[-_value.ndim:]))
             programs.singleset(self.dtype)\

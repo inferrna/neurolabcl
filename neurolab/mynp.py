@@ -6,7 +6,7 @@ from pyopencl import algorithm
 from pyopencl import bitonic_sort
 import clsrc
 import clprograms
-from checker import justtime,  chkvoidmethod, chkmethod, chkfunc, backtonp_voidmethod, backtonp_method, backtonp_func
+from checker import *
 from builtins import sum as bsum
 
 ctx = cl.create_some_context()

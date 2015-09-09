@@ -40,7 +40,8 @@ def isnanvoidmethod(func):
     def wrapper(*args, **kw):
         result = func(*args, **kw)
         clres = args[0].get()
-        assert not np.isnan(clres).any(), "Got NaN in void method {1}.\n. Args was \n{2} \n Result is \n{0}"\
+        if np.dtype(clres.dtype).kind == 'f':
+            assert not np.isnan(clres).any(), "Got NaN in void method {1}.\n. Args was \n{2} \n Result is \n{0}"\
                           .format(clres, func.__name__, args)
         return result
     return wrapper
@@ -48,15 +49,17 @@ def isnanvoidmethod(func):
 def isnanmethod(func):
     def wrapper(*args, **kw):
         result = func(*args, **kw)
-        assert not np.isnan(result).any(), "Got NaN in method {1}.\n. Args was \n{2}\n Result is \n{0}"\
-                          .format(clres, func.__name__, args)
+        if np.dtype(result.dtype).kind == 'f':
+            assert not np.isnan(result.get()).any(), "Got NaN in method {1}.\n. Args was \n{2}\n Result is \n{0}"\
+                          .format(result.get(), func.__name__, args)
         return result
     return wrapper
 def isnanfunc(func):
     def wrapper(*args, **kw):
         result = func(*args, **kw)
-        assert not np.isnan(result).any(), "Got NaN in func {1}.\n. Args was \n{2}.\n Result is \n{0}"\
-                          .format(clres, func.__name__, args)
+        if np.dtype(result.dtype).kind == 'f':
+            assert not np.isnan(result.get()).any(), "Got NaN in func {1}.\n. Args was \n{2}.\n Result is \n{0}"\
+                          .format(result.get(), func.__name__, args)
         return result
     return wrapper
 def chkvoidmethod(func):
